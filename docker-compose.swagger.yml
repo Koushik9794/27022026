@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    container_name: gss-swagger-ui
+    ports:
+      - "9090:8080"
+    environment:
+      SWAGGER_JSON: /api/swagger/index.yaml
+      SWAGGER_URL: /api/swagger
+    volumes:
+      - ./openapi/v1:/api/swagger:ro
+    networks:
+      - gss-network
+
+networks:
+  gss-network:
+    driver: bridge

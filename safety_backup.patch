@@ -1,0 +1,599 @@
+diff --git a/Services/admin-service/appsettings.json b/Services/admin-service/appsettings.json
+index 5ca9869..e22aff8 100644
+--- a/Services/admin-service/appsettings.json
++++ b/Services/admin-service/appsettings.json
+@@ -1,6 +1,6 @@
+ {
+   "ConnectionStrings": {
+-    "DefaultConnection": "Server=localhost;Database=admin_service;User Id=postgres;Password=postgres;Port=5432;"
++    "DefaultConnection": "Server=localhost;Database=admin_service;User Id=postgres;Password=Sridhar@2003;Port=5432;"
+   },
+   "Logging": {
+     "LogLevel": {
+diff --git a/Services/configuration-service/appsettings.json b/Services/configuration-service/appsettings.json
+index b0d6e2e..4ff32f0 100644
+--- a/Services/configuration-service/appsettings.json
++++ b/Services/configuration-service/appsettings.json
+@@ -7,7 +7,7 @@
+   },
+   "AllowedHosts": "*",
+   "ConnectionStrings": {
+-    "DefaultConnection": "Server=localhost;Database=configuration_service;User Id=postgres;Password=postgres;Port=5432;"
++    "DefaultConnection": "Server=localhost;Database=configuration_service;User Id=postgres;Password=Sridhar@2003;Port=5432;"
+   },
+   "Snapshot": {
+     "MaxSnapshotsPerConfiguration": 50,
+diff --git a/Services/file-service/src/api/controllers/FilesController.cs b/Services/file-service/src/api/controllers/FilesController.cs
+index 4ce0cdb..5aca5b8 100644
+--- a/Services/file-service/src/api/controllers/FilesController.cs
++++ b/Services/file-service/src/api/controllers/FilesController.cs
+@@ -1,5 +1,7 @@
++using System.IO;
+ using System.Threading.Tasks;
+ using FileService.Application.Commands;
++using FileService.Application.Queries;
+ using FileService.Domain.Aggregates;
+ using Microsoft.AspNetCore.Http;
+ using Microsoft.AspNetCore.Mvc;
+@@ -39,5 +41,27 @@ namespace FileService.Api.Controllers
+                 return BadRequest(ex.Message);
+             }
+         }
++
++        [HttpGet("download")]
++        [ProducesResponseType(StatusCodes.Status200OK)]
++        [ProducesResponseType(StatusCodes.Status404NotFound)]
++        public async Task<IActionResult> Download([FromQuery] string filePath, [FromQuery] string? contentType = null)
++        {
++            try
++            {
++                var query = new GetFileQuery(filePath);
++                var stream = await _mediator.InvokeAsync<Stream>(query);
++                
++                return File(stream, contentType ?? "application/octet-stream", Path.GetFileName(filePath));
++            }
++            catch (FileNotFoundException)
++            {
++                return NotFound("File not found.");
++            }
++            catch (System.Exception ex)
++            {
++                return BadRequest(ex.Message);
++            }
++        }
+     }
+ }
+diff --git a/gss-web-api/src/Services/ConfigurationService.cs b/gss-web-api/src/Services/ConfigurationService.cs
+index cb599ed..1fae53f 100644
+--- a/gss-web-api/src/Services/ConfigurationService.cs
++++ b/gss-web-api/src/Services/ConfigurationService.cs
+@@ -1,6 +1,7 @@
+-using System.Net.Http;
++using System.Net.Http.Headers;
+ using System.Text;
+ using System.Text.Json;
++using GssWebApi.Dto;
+ using GssWebApi.Services;
+ 
+ namespace GssWebApi.src.Services;
+@@ -13,12 +14,13 @@ public class ConfigurationService : IConfigurationService
+     {
+         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+     };
++
+     public ConfigurationService(HttpClient httpClient, ILogger<ConfigurationService> logger)
+     {
+         _httpClient = httpClient;
+         _logger = logger;
+-
+     }
++
+     #region Enquiries
+ 
+     public async Task<HttpResponseMessage> GetAllEnquiriesAsync(bool includeDeleted = false)
+@@ -40,13 +42,13 @@ public class ConfigurationService : IConfigurationService
+         return await _httpClient.GetAsync($"/api/v1/enquiries/external/{externalId}");
+     }
+ 
+-    public async Task<HttpResponseMessage> CreateEnquiryAsync(object request)
++    public async Task<HttpResponseMessage> CreateEnquiryAsync(CreateEnquiryRequest request)
+     {
+         _logger.LogDebug("Creating enquiry");
+         return await PostJsonAsync("/api/v1/enquiries", request);
+     }
+ 
+-    public async Task<HttpResponseMessage> UpdateEnquiryAsync(Guid id, object request)
++    public async Task<HttpResponseMessage> UpdateEnquiryAsync(Guid id, UpdateEnquiryRequest request)
+     {
+         _logger.LogDebug("Updating enquiry: {Id}", id);
+         return await PutJsonAsync($"/api/v1/enquiries/{id}", request);
+@@ -71,24 +73,27 @@ public class ConfigurationService : IConfigurationService
+         return await _httpClient.GetAsync(url);
+     }
+ 
++    public async Task<HttpResponseMessage> GetConfigurationListAsync(Guid enquiryId, bool includeInactive = false)
++    {
++        _logger.LogDebug("Getting configuration list for enquiry: {EnquiryId}", enquiryId);
++        var url = includeInactive
++            ? $"/api/v1/enquiries/{enquiryId}/configurationList?includeInactive=true"
++            : $"/api/v1/enquiries/{enquiryId}/configurationList";
++        return await _httpClient.GetAsync(url);
++    }
++
+     public async Task<HttpResponseMessage> GetConfigurationByIdAsync(Guid enquiryId, Guid configId)
+     {
+         _logger.LogDebug("Getting configuration: {ConfigId} for enquiry: {EnquiryId}", configId, enquiryId);
+         return await _httpClient.GetAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}");
+     }
+ 
+-    public async Task<HttpResponseMessage> CreateConfigurationAsync(Guid enquiryId, object request)
++    public async Task<HttpResponseMessage> CreateConfigurationAsync(Guid enquiryId, EnquiryCreateConfigurationRequest request)
+     {
+         _logger.LogDebug("Creating configuration for enquiry: {EnquiryId}", enquiryId);
+         return await PostJsonAsync($"/api/v1/enquiries/{enquiryId}/configurations", request);
+     }
+ 
+-    public async Task<HttpResponseMessage> SetPrimaryConfigurationAsync(Guid enquiryId, Guid configId)
+-    {
+-        _logger.LogDebug("Setting primary configuration: {ConfigId} for enquiry: {EnquiryId}", configId, enquiryId);
+-        return await _httpClient.PostAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/set-primary", null);
+-    }
+-
+     public async Task<HttpResponseMessage> DeleteConfigurationAsync(Guid enquiryId, Guid configId)
+     {
+         _logger.LogDebug("Deleting configuration: {ConfigId} for enquiry: {EnquiryId}", configId, enquiryId);
+@@ -99,44 +104,64 @@ public class ConfigurationService : IConfigurationService
+ 
+     #region Versions
+ 
+-    public async Task<HttpResponseMessage> CreateVersionAsync(Guid enquiryId, Guid configId, object request)
++    public async Task<HttpResponseMessage> CreateVersionAsync(Guid enquiryId, Guid configId, CreateVersionRequest request)
+     {
+         _logger.LogDebug("Creating version for configuration: {ConfigId}", configId);
+         return await PostJsonAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/versions", request);
+     }
+ 
+-    public async Task<HttpResponseMessage> GetCurrentVersionAsync(Guid enquiryId, Guid configId)
++    public async Task<HttpResponseMessage> LockVersionAsync(Guid enquiryId, Guid configId, int versionNumber, CreateVersionRequest request)
+     {
+-        _logger.LogDebug("Getting current version for configuration: {ConfigId}", configId);
+-        return await _httpClient.GetAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/versions/current");
++        _logger.LogDebug("Locking version: {VersionNumber} for configuration: {ConfigId}", versionNumber, configId);
++        return await PutJsonAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/version-lock/{versionNumber}", request);
+     }
+ 
+-    public async Task<HttpResponseMessage> SetCurrentVersionAsync(Guid enquiryId, Guid configId, int versionNumber)
++    public async Task<HttpResponseMessage> UnlockVersionAsync(Guid enquiryId, Guid configId, int versionNumber, CreateVersionRequest request)
+     {
+-        _logger.LogDebug("Setting current version: {VersionNumber} for configuration: {ConfigId}", versionNumber, configId);
+-        return await _httpClient.PostAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/versions/{versionNumber}/set-current", null);
++        _logger.LogDebug("Unlocking version: {VersionNumber} for configuration: {ConfigId}", versionNumber, configId);
++        return await PutJsonAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/un-lock-version/{versionNumber}", request);
+     }
+ 
+     #endregion
+ 
+     #region Layouts
+ 
+-    public async Task<HttpResponseMessage> GetCivilLayoutAsync(Guid enquiryId, Guid configId)
++    public async Task<HttpResponseMessage> GetCivilLayoutListAsync(Guid enquiryId, Guid configId)
+     {
+-        _logger.LogDebug("Getting civil layout for configuration: {ConfigId}", configId);
++        _logger.LogDebug("Getting civil layout list for configuration: {ConfigId}", configId);
+         return await _httpClient.GetAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/civil-layout");
+     }
+ 
+-    public async Task<HttpResponseMessage> SaveCivilLayoutAsync(Guid enquiryId, Guid configId, object request)
++    public async Task<HttpResponseMessage> GetCivilLayoutByIdAsync(Guid id)
+     {
+-        _logger.LogDebug("Saving civil layout for configuration: {ConfigId}", configId);
+-        return await PutJsonAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/civil-layout", request);
++        _logger.LogDebug("Getting civil layout by ID: {Id}", id);
++        return await _httpClient.GetAsync($"/api/v1/configurations/civil-layout/{id}");
++    }
++
++    public async Task<HttpResponseMessage> UpdateCivilLayoutAsync(Guid id, UpdateCivilLayoutRequest request)
++    {
++        _logger.LogDebug("Updating civil layout: {Id}", id);
++        var content = new MultipartFormDataContent();
++        if (request.WarehouseType.HasValue)
++            content.Add(new StringContent(request.WarehouseType.ToString()!), "WarehouseType");
++        
++        AddFileContent(content, request.SourceFile, "SourceFile");
++        AddFileContent(content, request.CivilJson, "CivilJson");
++
++        return await _httpClient.PutAsync($"/api/v1/configurations/civil-layout/{id}", content);
+     }
+ 
+-    public async Task<HttpResponseMessage> CreateCivilLayoutAsync(Guid enquiryId, Guid configId, object request)
++    public async Task<HttpResponseMessage> CreateCivilLayoutAsync(Guid enquiryId, Guid configId, SaveCivilLayoutRequest request)
+     {
+         _logger.LogDebug("Creating civil layout for configuration: {ConfigId}", configId);
+-        return await PostJsonAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/civil-layout", request);
++        var content = new MultipartFormDataContent();
++        if (request.WarehouseType.HasValue)
++            content.Add(new StringContent(request.WarehouseType.ToString()!), "WarehouseType");
++        
++        AddFileContent(content, request.SourceFile, "SourceFile");
++        AddFileContent(content, request.CivilJson, "CivilJson");
++
++        return await _httpClient.PostAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/civil-layout", content);
+     }
+ 
+     public async Task<HttpResponseMessage> GetRackLayoutAsync(Guid enquiryId, Guid configId, int versionNumber)
+@@ -145,16 +170,38 @@ public class ConfigurationService : IConfigurationService
+         return await _httpClient.GetAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/versions/{versionNumber}/rack-layout");
+     }
+ 
+-    public async Task<HttpResponseMessage> SaveRackLayoutAsync(Guid enquiryId, Guid configId, int versionNumber, object request)
++    public async Task<HttpResponseMessage> UpdateRackLayoutAsync(Guid id, SaveRackLayoutRequest request)
+     {
+-        _logger.LogDebug("Saving rack layout for configuration: {ConfigId} version: {VersionNumber}", configId, versionNumber);
+-        return await PutJsonAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/versions/{versionNumber}/rack-layout", request);
++        _logger.LogDebug("Updating rack layout: {Id}", id);
++        var content = new MultipartFormDataContent();
++        AddFileContent(content, request.RackJson, "RackJson");
++
++        return await _httpClient.PutAsync($"/api/v1/configurations/rack-layout/{id}", content);
+     }
+ 
+-    public async Task<HttpResponseMessage> CreateRackLayoutAsync(Guid enquiryId, Guid configId, int versionNumber, object request)
++    public async Task<HttpResponseMessage> CreateRackLayoutAsync(Guid configId, int civilVersion, int configVersion, SaveRackLayoutRequest request)
+     {
+-        _logger.LogDebug("Creating rack layout for configuration: {ConfigId} version: {VersionNumber}", configId, versionNumber);
+-        return await PostJsonAsync($"/api/v1/enquiries/{enquiryId}/configurations/{configId}/versions/{versionNumber}/rack-layout", request);
++        _logger.LogDebug("Creating rack layout for configuration: {ConfigId}", configId);
++        var content = new MultipartFormDataContent();
++        AddFileContent(content, request.RackJson, "RackJson");
++
++        return await _httpClient.PostAsync($"/api/v1/configurations/{configId}/civil-versions/{civilVersion}/config-versions/{configVersion}/rack-layout", content);
++    }
++
++    #endregion
++
++    #region Storage Configurations
++
++    public async Task<HttpResponseMessage> SaveDesignAsync(Guid id, SaveDesignRequest request)
++    {
++        _logger.LogDebug("Saving design for storage configuration: {Id}", id);
++        return await PutJsonAsync($"/api/v1/storage-configurations/{id}/design", request);
++    }
++
++    public async Task<HttpResponseMessage> CreateStorageConfigurationAsync(CreateStorageConfigurationRequest request)
++    {
++        _logger.LogDebug("Creating storage configuration");
++        return await PostJsonAsync("/api/v1/storage-configurations", request);
+     }
+ 
+     #endregion
+@@ -175,5 +222,15 @@ public class ConfigurationService : IConfigurationService
+         return await _httpClient.PutAsync(url, content);
+     }
+ 
++    private void AddFileContent(MultipartFormDataContent content, IFormFile? file, string name)
++    {
++        if (file != null)
++        {
++            var streamContent = new StreamContent(file.OpenReadStream());
++            streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
++            content.Add(streamContent, name, file.FileName);
++        }
++    }
++
+     #endregion
+ }
+diff --git a/gss-web-api/src/Services/IConfigurationService.cs b/gss-web-api/src/Services/IConfigurationService.cs
+index 3f211c2..bc7e848 100644
+--- a/gss-web-api/src/Services/IConfigurationService.cs
++++ b/gss-web-api/src/Services/IConfigurationService.cs
+@@ -1,33 +1,39 @@
++using GssWebApi.Dto;
++
+ namespace GssWebApi.src.Services;
+ 
+-public interface   IConfigurationService
++public interface IConfigurationService
+ {
+     // Enquiry endpoints
+     Task<HttpResponseMessage> GetAllEnquiriesAsync(bool includeDeleted = false);
+     Task<HttpResponseMessage> GetEnquiryByIdAsync(Guid id);
+     Task<HttpResponseMessage> GetEnquiryByExternalIdAsync(string externalId);
+-    Task<HttpResponseMessage> CreateEnquiryAsync(object request);
+-    Task<HttpResponseMessage> UpdateEnquiryAsync(Guid id, object request);
++    Task<HttpResponseMessage> CreateEnquiryAsync(CreateEnquiryRequest request);
++    Task<HttpResponseMessage> UpdateEnquiryAsync(Guid id, UpdateEnquiryRequest request);
+     Task<HttpResponseMessage> DeleteEnquiryAsync(Guid id);
+ 
+     // Configuration endpoints
+     Task<HttpResponseMessage> GetConfigurationsByEnquiryIdAsync(Guid enquiryId, bool includeInactive = false);
++    Task<HttpResponseMessage> GetConfigurationListAsync(Guid enquiryId, bool includeInactive = false);
+     Task<HttpResponseMessage> GetConfigurationByIdAsync(Guid enquiryId, Guid configId);
+-    Task<HttpResponseMessage> CreateConfigurationAsync(Guid enquiryId, object request);
+-    Task<HttpResponseMessage> SetPrimaryConfigurationAsync(Guid enquiryId, Guid configId);
++    Task<HttpResponseMessage> CreateConfigurationAsync(Guid enquiryId, EnquiryCreateConfigurationRequest request);
+     Task<HttpResponseMessage> DeleteConfigurationAsync(Guid enquiryId, Guid configId);
+ 
+     // Version endpoints
+-    Task<HttpResponseMessage> CreateVersionAsync(Guid enquiryId, Guid configId, object request);
+-    Task<HttpResponseMessage> GetCurrentVersionAsync(Guid enquiryId, Guid configId);
+-    Task<HttpResponseMessage> SetCurrentVersionAsync(Guid enquiryId, Guid configId, int versionNumber);
++    Task<HttpResponseMessage> CreateVersionAsync(Guid enquiryId, Guid configId, CreateVersionRequest request);
++    Task<HttpResponseMessage> LockVersionAsync(Guid enquiryId, Guid configId, int versionNumber, CreateVersionRequest request);
++    Task<HttpResponseMessage> UnlockVersionAsync(Guid enquiryId, Guid configId, int versionNumber, CreateVersionRequest request);
+ 
+     // Layout endpoints
+-    Task<HttpResponseMessage> GetCivilLayoutAsync(Guid enquiryId, Guid configId);
+-    Task<HttpResponseMessage> SaveCivilLayoutAsync(Guid enquiryId, Guid configId, object request);
+-    Task<HttpResponseMessage> CreateCivilLayoutAsync(Guid enquiryId, Guid configId, object request);
++    Task<HttpResponseMessage> GetCivilLayoutListAsync(Guid enquiryId, Guid configId);
++    Task<HttpResponseMessage> GetCivilLayoutByIdAsync(Guid id);
++    Task<HttpResponseMessage> UpdateCivilLayoutAsync(Guid id, UpdateCivilLayoutRequest request);
++    Task<HttpResponseMessage> CreateCivilLayoutAsync(Guid enquiryId, Guid configId, SaveCivilLayoutRequest request);
+     Task<HttpResponseMessage> GetRackLayoutAsync(Guid enquiryId, Guid configId, int versionNumber);
+-    Task<HttpResponseMessage> SaveRackLayoutAsync(Guid enquiryId, Guid configId, int versionNumber, object request);
+-    Task<HttpResponseMessage> CreateRackLayoutAsync(Guid enquiryId, Guid configId, int versionNumber, object request);
+-}
++    Task<HttpResponseMessage> UpdateRackLayoutAsync(Guid id, SaveRackLayoutRequest request);
++    Task<HttpResponseMessage> CreateRackLayoutAsync(Guid configId, int civilVersion, int configVersion, SaveRackLayoutRequest request);
+ 
++    // Storage Configuration endpoints
++    Task<HttpResponseMessage> SaveDesignAsync(Guid id, SaveDesignRequest request);
++    Task<HttpResponseMessage> CreateStorageConfigurationAsync(CreateStorageConfigurationRequest request);
++}
+diff --git a/gss-web-api/src/api/controllers/EnquiriesController.cs b/gss-web-api/src/api/controllers/EnquiriesController.cs
+index 57bc0dd..6b8c368 100644
+--- a/gss-web-api/src/api/controllers/EnquiriesController.cs
++++ b/gss-web-api/src/api/controllers/EnquiriesController.cs
+@@ -1,73 +1,71 @@
+-using GssWebApi.Services;
++using GssWebApi.Dto;
+ using GssWebApi.src.Services;
+-using Microsoft.AspNetCore.Http;
+-using Microsoft.AspNetCore.Http.HttpResults;
+ using Microsoft.AspNetCore.Mvc;
+ 
+-namespace GssWebApi.src.api.controllers;
++namespace GssWebApi.Api.Controllers;
+ 
++/// <summary>
++/// BFF controller for managing Enquiries and Configurations.
++/// Proxies requests to the Configuration Service.
++/// </summary>
+ [ApiController]
+-[Route("api/configuration/enquiries")]
++[Route("api/v1/enquiries")]
+ [Produces("application/json")]
+ public class EnquiriesController : ControllerBase
+ {
++    private readonly IConfigurationService _configClient;
+     private readonly ILogger<EnquiriesController> _logger;
+-    private readonly IConfigurationService _configurationService;
+-    public EnquiriesController(ILogger<EnquiriesController> logger, IConfigurationService configurationServic)
++
++    public EnquiriesController(IConfigurationService configClient, ILogger<EnquiriesController> logger)
+     {
++        _configClient = configClient;
+         _logger = logger;
+-        _configurationService = configurationServic;
+     }
+ 
+-    /// <summary>
+-    /// Get all the Enquries.
+-    /// </summary>
++    // ============ Enquiry Endpoints ============
++
+     [HttpGet]
+-    public async Task<IActionResult> GetAll()
++    [ProducesResponseType(typeof(IEnumerable<EnquiryDto>), StatusCodes.Status200OK)]
++    public async Task<IActionResult> GetAll([FromQuery] bool includeDeleted = false)
+     {
+-        var response = await _configurationService.GetAllEnquiriesAsync();
++        var response = await _configClient.GetAllEnquiriesAsync(includeDeleted);
+         return await ProxyResponse(response);
+     }
+ 
+-
+-    /// <summary>
+-    /// Get Enquriey by ID .
+-    /// </summary>
+     [HttpGet("{id:guid}")]
+-    public async Task<IActionResult> GetByID(Guid id)
++    [ProducesResponseType(typeof(EnquiryDto), StatusCodes.Status200OK)]
++    public async Task<IActionResult> GetById(Guid id)
+     {
+-        var response = await _configurationService.GetEnquiryByIdAsync(id);
++        var response = await _configClient.GetEnquiryByIdAsync(id);
++        return await ProxyResponse(response);
++    }
++
++    [HttpGet("external/{externalId}")]
++    [ProducesResponseType(typeof(EnquiryDto), StatusCodes.Status200OK)]
++    public async Task<IActionResult> GetByExternalId(string externalId)
++    {
++        var response = await _configClient.GetEnquiryByExternalIdAsync(externalId);
+         return await ProxyResponse(response);
+     }
+ 
+-    /// <summary>
+-    /// Create a new Enquriey.
+-    /// </summary>
+     [HttpPost]
+-    public async Task<IActionResult> Create([FromBody] object request)
++    public async Task<IActionResult> Create([FromBody] CreateEnquiryRequest request)
+     {
+-        var response = await _configurationService.CreateEnquiryAsync(request);
++        var response = await _configClient.CreateEnquiryAsync(request);
+         return await ProxyResponse(response);
+     }
+ 
+-    /// <summary>
+-    /// Update Enquriey by ID.
+-    /// </summary>
+     [HttpPut("{id:guid}")]
+-    public async Task<IActionResult> Update(Guid id, [FromBody] object request)
++    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEnquiryRequest request)
+     {
+-        var response = await _configurationService.UpdateEnquiryAsync(id,request);
++        var response = await _configClient.UpdateEnquiryAsync(id, request);
+         return await ProxyResponse(response);
+     }
+ 
+-    /// <summary>
+-    /// Delete Enquriey by ID.
+-    /// </summary>
+-    ///
+     [HttpDelete("{id:guid}")]
+     public async Task<IActionResult> Delete(Guid id)
+     {
+-        var response = await _configurationService.DeleteEnquiryAsync(id);
++        var response = await _configClient.DeleteEnquiryAsync(id);
+         return await ProxyResponse(response);
+     }
+ 
+@@ -76,102 +74,113 @@ public class EnquiriesController : ControllerBase
+     [HttpGet("{enquiryId:guid}/configurations")]
+     public async Task<IActionResult> GetConfigurations(Guid enquiryId, [FromQuery] bool includeInactive = false)
+     {
+-        var response = await _configurationService.GetConfigurationsByEnquiryIdAsync(enquiryId, includeInactive);
++        var response = await _configClient.GetConfigurationsByEnquiryIdAsync(enquiryId, includeInactive);
+         return await ProxyResponse(response);
+     }
+ 
+-    [HttpGet("{enquiryId:guid}/configurations/{configId:guid}")]
+-    public async Task<IActionResult> GetConfiguration(Guid enquiryId, Guid configId)
++    [HttpGet("{enquiryId:guid}/configurationList")]
++    public async Task<IActionResult> GetConfigurationList(Guid enquiryId, [FromQuery] bool includeInactive = false)
+     {
+-        var response = await _configurationService.GetConfigurationByIdAsync(enquiryId, configId);
++        var response = await _configClient.GetConfigurationListAsync(enquiryId, includeInactive);
+         return await ProxyResponse(response);
+     }
+ 
+-    [HttpPost("{enquiryId:guid}/configurations")]
+-    public async Task<IActionResult> CreateConfiguration(Guid enquiryId, [FromBody] object request)
++    [HttpGet("{enquiryId:guid}/configurations/{configId:guid}")]
++    public async Task<IActionResult> GetConfiguration(Guid enquiryId, Guid configId)
+     {
+-        var response = await _configurationService.CreateConfigurationAsync(enquiryId, request);
++        var response = await _configClient.GetConfigurationByIdAsync(enquiryId, configId);
+         return await ProxyResponse(response);
+     }
+ 
+-    [HttpPost("{enquiryId:guid}/configurations/{configId:guid}/set-primary")]
+-    public async Task<IActionResult> SetPrimary(Guid enquiryId, Guid configId)
++    [HttpPost("{enquiryId:guid}/configurations")]
++    public async Task<IActionResult> CreateConfiguration(Guid enquiryId, [FromBody] EnquiryCreateConfigurationRequest request)
+     {
+-        var response = await _configurationService.SetPrimaryConfigurationAsync(enquiryId, configId);
++        var response = await _configClient.CreateConfigurationAsync(enquiryId, request);
+         return await ProxyResponse(response);
+     }
+ 
+     [HttpDelete("{enquiryId:guid}/configurations/{configId:guid}")]
+     public async Task<IActionResult> DeleteConfiguration(Guid enquiryId, Guid configId)
+     {
+-        var response = await _configurationService.DeleteConfigurationAsync(enquiryId, configId);
++        var response = await _configClient.DeleteConfigurationAsync(enquiryId, configId);
+         return await ProxyResponse(response);
+     }
+ 
+     // ============ Version Endpoints ============
+ 
+     [HttpPost("{enquiryId:guid}/configurations/{configId:guid}/versions")]
+-    public async Task<IActionResult> CreateVersion(Guid enquiryId, Guid configId, [FromBody] object request)
++    public async Task<IActionResult> CreateVersion(Guid enquiryId, Guid configId, [FromBody] CreateVersionRequest request)
+     {
+-        var response = await _configurationService.CreateVersionAsync(enquiryId, configId, request);
++        var response = await _configClient.CreateVersionAsync(enquiryId, configId, request);
+         return await ProxyResponse(response);
+     }
+ 
+-    [HttpGet("{enquiryId:guid}/configurations/{configId:guid}/versions/current")]
+-    public async Task<IActionResult> GetCurrentVersion(Guid enquiryId, Guid configId)
++    [HttpPut("{enquiryId:guid}/configurations/{configId:guid}/version-lock/{versionNumber:int}")]
++    public async Task<IActionResult> LockVersion(Guid enquiryId, Guid configId, int versionNumber, [FromBody] CreateVersionRequest request)
+     {
+-        var response = await _configurationService.GetCurrentVersionAsync(enquiryId, configId);
++        var response = await _configClient.LockVersionAsync(enquiryId, configId, versionNumber, request);
+         return await ProxyResponse(response);
+     }
+ 
+-    [HttpPost("{enquiryId:guid}/configurations/{configId:guid}/versions/{versionNumber:int}/set-current")]
+-    public async Task<IActionResult> SetCurrentVersion(Guid enquiryId, Guid configId, int versionNumber)
++    [HttpPut("{enquiryId:guid}/configurations/{configId:guid}/un-lock-version/{versionNumber:int}")]
++    public async Task<IActionResult> UnlockVersion(Guid enquiryId, Guid configId, int versionNumber, [FromBody] CreateVersionRequest request)
+     {
+-        var response = await _configurationService.SetCurrentVersionAsync(enquiryId, configId, versionNumber);
++        var response = await _configClient.UnlockVersionAsync(enquiryId, configId, versionNumber, request);
+         return await ProxyResponse(response);
+     }
+ 
+     // ============ Civil Layout & Rack Layout Endpoints ============
+ 
+     [HttpGet("{enquiryId:guid}/configurations/{configId:guid}/civil-layout")]
+-    public async Task<IActionResult> GetCivilLayout(Guid enquiryId, Guid configId)
++    public async Task<IActionResult> GetCivilLayoutList(Guid enquiryId, Guid configId)
++    {
++        var response = await _configClient.GetCivilLayoutListAsync(enquiryId, configId);
++        return await ProxyResponse(response);
++    }
++
++    [HttpGet("configurations/civil-layout/{id:guid}")]
++    public async Task<IActionResult> GetCivilLayoutById(Guid id)
+     {
+-        var response = await _configurationService.GetCivilLayoutAsync(enquiryId, configId);
++        var response = await _configClient.GetCivilLayoutByIdAsync(id);
+         return await ProxyResponse(response);
+     }
+ 
+-    [HttpPut("{enquiryId:guid}/configurations/{configId:guid}/civil-layout")]
+-    public async Task<IActionResult> SaveCivilLayout(Guid enquiryId, Guid configId, [FromBody] object request)
++    [HttpPut("configurations/civil-layout/{id:guid}")]
++    [Consumes("multipart/form-data")]
++    public async Task<IActionResult> UpdateCivilLayout(Guid id, [FromForm] UpdateCivilLayoutRequest request)
+     {
+-        var response = await _configurationService.SaveCivilLayoutAsync(enquiryId, configId, request);
++        var response = await _configClient.UpdateCivilLayoutAsync(id, request);
+         return await ProxyResponse(response);
+     }
+ 
+     [HttpPost("{enquiryId:guid}/configurations/{configId:guid}/civil-layout")]
+-    public async Task<IActionResult> CreateCivilLayout(Guid enquiryId, Guid configId, [FromBody] object request)
++    [Consumes("multipart/form-data")]
++    public async Task<IActionResult> CreateCivilLayout(Guid enquiryId, Guid configId, [FromForm] SaveCivilLayoutRequest request)
+     {
+-        var response = await _configurationService.CreateCivilLayoutAsync(enquiryId, configId, request);
++        var response = await _configClient.CreateCivilLayoutAsync(enquiryId, configId, request);
+         return await ProxyResponse(response);
+     }
+ 
+     [HttpGet("{enquiryId:guid}/configurations/{configId:guid}/versions/{versionNumber:int}/rack-layout")]
+     public async Task<IActionResult> GetRackLayout(Guid enquiryId, Guid configId, int versionNumber)
+     {
+-        var response = await _configurationService.GetRackLayoutAsync(enquiryId, configId, versionNumber);
++        var response = await _configClient.GetRackLayoutAsync(enquiryId, configId, versionNumber);
+         return await ProxyResponse(response);
+     }
+ 
+-    [HttpPut("{enquiryId:guid}/configurations/{configId:guid}/versions/{versionNumber:int}/rack-layout")]
+-    public async Task<IActionResult> SaveRackLayout(Guid enquiryId, Guid configId, int versionNumber, [FromBody] object request)
++    [HttpPut("configurations/rack-layout/{id:guid}")]
++    [Consumes("multipart/form-data")]
++    public async Task<IActionResult> UpdateRackLayout(Guid id, [FromForm] SaveRackLayoutRequest request)
+     {
+-        var response = await _configurationService.SaveRackLayoutAsync(enquiryId, configId, versionNumber, request);
++        var response = await _configClient.UpdateRackLayoutAsync(id, request);
+         return await ProxyResponse(response);
+     }
+ 
+-    [HttpPost("{enquiryId:guid}/configurations/{configId:guid}/versions/{versionNumber:int}/rack-layout")]
+-    public async Task<IActionResult> CreateRackLayout(Guid enquiryId, Guid configId, int versionNumber, [FromBody] object request)
++    [HttpPost("configurations/{configId:guid}/civil-versions/{civilVersion:int}/config-versions/{configVersion:int}/rack-layout")]
++    [Consumes("multipart/form-data")]
++    public async Task<IActionResult> CreateRackLayout(Guid configId, int civilVersion, int configVersion, [FromForm] SaveRackLayoutRequest request)
+     {
+-        var response = await _configurationService.CreateRackLayoutAsync(enquiryId, configId, versionNumber, request);
++        var response = await _configClient.CreateRackLayoutAsync(configId, civilVersion, configVersion, request);
+         return await ProxyResponse(response);
+     }
+ 
