@@ -1,0 +1,31 @@
+version: 0.2
+
+env:
+  variables:
+    ECR_URI: "771355239036.dkr.ecr.ap-south-1.amazonaws.com/gss-backend"
+    AWS_DEFAULT_REGION: "ap-south-1"
+    CDK_DEPLOY_ROLE_ARN: "arn:aws:iam::771355239036:role/Infra_setup"
+    RUNTIME_ACCOUNT_ID: "771355239306"
+
+phases:
+
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - npm install -g aws-cdk@2
+      - cd gss-runtime-infra && npm install && cd ..
+
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 771355239036.dkr.ecr.ap-south-1.amazonaws.com
+
+  build:
+    commands:
+      - docker build -t $ECR_URI:latest Services/admin-service
+      - docker push $ECR_URI:latest
+
+  post_build:
+    commands:
+      - cd gss-runtime-infra
+      - CDK_DEFAULT_ACCOUNT=$RUNTIME_ACCOUNT_ID CDK_DEFAULT_REGION=$AWS_DEFAULT_REGION npx cdk deploy --all --role-arn $CDK_DEPLOY_ROLE_ARN --require-approval never

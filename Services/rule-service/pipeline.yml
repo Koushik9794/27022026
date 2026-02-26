@@ -1,0 +1,62 @@
+# CI/CD Pipeline Configuration
+
+trigger:
+  - main
+  - develop
+  - feature/*
+
+pr:
+  - main
+  - develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  projectPath: 'Services/rule-service'
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildAndTest
+        steps:
+          - task: UseDotNet@2
+            inputs:
+              version: '8.x'
+          
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore NuGet packages'
+            inputs:
+              command: 'restore'
+              projects: '$(projectPath)/**/*.csproj'
+          
+          - task: DotNetCoreCLI@2
+            displayName: 'Build'
+            inputs:
+              command: 'build'
+              arguments: '--configuration $(buildConfiguration)'
+              projects: '$(projectPath)/**/*.csproj'
+          
+          - task: DotNetCoreCLI@2
+            displayName: 'Run Unit Tests'
+            inputs:
+              command: 'test'
+              arguments: '--configuration $(buildConfiguration) --no-build'
+              projects: '$(projectPath)/tests/**/*Tests.csproj'
+
+  - stage: Package
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: PackageDocker
+        steps:
+          - task: Docker@2
+            displayName: 'Build Docker Image'
+            inputs:
+              command: 'build'
+              Dockerfile: '$(projectPath)/Dockerfile'
+              tags: |
+                $(Build.Repository.Name):$(Build.BuildId)
+                $(Build.Repository.Name):latest
+

@@ -1,0 +1,73 @@
+paths:
+  /rules/rulesets:
+    get:
+      tags:
+        - Rulesets
+      summary: List rulesets
+      parameters:
+        - name: productGroupId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ruleset list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Ruleset'
+
+  /rules/rulesets/{id}:
+    get:
+      tags:
+        - Rulesets
+      summary: Get ruleset by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ruleset details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ruleset'
+
+components:
+  schemas:
+    Ruleset:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        productGroupId:
+          type: string
+          format: uuid
+        countryId:
+          type: string
+          format: uuid
+        effectiveFrom:
+          type: string
+          format: date-time
+        effectiveTo:
+          type: string
+          format: date-time
+        rules:
+          type: object
+          description: JSON rules definition
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, INACTIVE, ARCHIVED]

@@ -1,0 +1,78 @@
+[
+  {
+    "id": "rule-1",
+    "field": "palletWidth",
+    "operator": "lt",
+    "value": 650,
+    "message": "Pallet width (W) should not be less than 650mm.",
+    "severity": "error",
+    "active": true
+  },
+  {
+    "id": "rule-2",
+    "field": "levels",
+    "operator": "gt",
+    "value": 8,
+    "message": "More than 8 levels may require additional structural review.",
+    "severity": "warning",
+    "active": true
+  },
+  {
+    "id": "rule-1768570150119",
+    "field": "frameDepth",
+    "operator": "lt",
+    "value": 500,
+    "message": "Minimum Frame Depth should be 500",
+    "severity": "error",
+    "active": true
+  },
+  {
+    "id": "rule-1768570172844",
+    "field": "frameDepth",
+    "operator": "gt",
+    "value": 1500,
+    "message": "Maximum Frame depth should be 1500mm",
+    "severity": "error",
+    "active": true
+  },
+  {
+    "id": "rule-1768580311836",
+    "field": "palletOverhang",
+    "operator": "lt",
+    "value": 50,
+    "message": "Pallet Overhang should be minimum 50mm",
+    "severity": "error",
+    "active": true
+  },
+  {
+    "id": "rule-1768580349620",
+    "field": "palletOverhang",
+    "operator": "gt",
+    "value": 150,
+    "message": "Pallet Overhang should be maximum 150mm",
+    "severity": "error",
+    "active": true
+  },
+  {
+    "id": "rule-1768585656496",
+    "field": "palletWeight",
+    "operator": "gt",
+    "value": 1000,
+    "message": "Pallet Weight cannot exceed 1000kg",
+    "severity": "error",
+    "active": true
+  },
+  {
+    "id": "rule-1768588014001",
+    "field": "frameDepth",
+    "operator": "neq",
+    "compareBy": "formula",
+    "compareField": "",
+    "formula": "palletWidth - 2 * palletOverhang",
+    "offset": 0,
+    "value": 0,
+    "message": "frame width does not match",
+    "severity": "error",
+    "active": true
+  }
+]

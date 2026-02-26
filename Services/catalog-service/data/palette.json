@@ -1,0 +1,354 @@
+{
+  "paletteVersion": "v1",
+  "groups": [
+    {
+      "id": "WAREHOUSE_TYPE",
+      "label": "Warehouse Types",
+      "items": [
+        {
+          "id": "d89ecc23-f2df-4335-8b0b-4b84381ca9a8",
+          "name": "Flat",
+          "label": "Flat Warehouse",
+          "icon": "warehouse-flat.svg",
+          "tooltip": "Standard flat roof warehouse",
+          "category": "WAREHOUSE",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER",
+            "DEALER"
+          ],
+          "templatePath": null,
+          "attributes": {
+            "DEPTH": 1200,
+            "WIDTH": 1200,
+            "HEIGHT": 1500
+          }
+        },
+        {
+          "id": "d89ecc23-f2df-4335-8b0b-4b84381ca9b2",
+          "name": "Roof",
+          "label": "Roof Warehouse",
+          "icon": "warehouse-roof.svg",
+          "tooltip": "Warehouse with pitched roof",
+          "category": "WAREHOUSE",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER"
+          ],
+          "templatePath": "rooftemplate.dxf",
+          "attributes": null
+        },
+        {
+          "id": "d89ecc23-f2df-4335-8b0b-4b84381ca9e3",
+          "name": "Inclined",
+          "label": "Inclined Warehouse",
+          "icon": "warehouse-inclined.svg",
+          "tooltip": "Warehouse with inclined roof",
+          "category": "WAREHOUSE",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER"
+          ],
+          "templatePath": "rooftemplate.dxf",
+          "attributes": null
+        }
+      ]
+    },
+    {
+      "id": "SKU",
+      "label": "Stock Keeping Units",
+      "items": [
+        {
+          "id": "2ba29789-40b2-4a6c-bcbf-1170f1529ea3",
+          "name": "BOX",
+          "label": "Box",
+          "icon": "sku-box.svg",
+          "tooltip": "Standard storage box",
+          "category": "SKU",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER",
+            "DEALER"
+          ],
+          "attributes": {
+            "DEPTH": 1200,
+            "WIDTH": 1200,
+            "HEIGHT": 1500
+          }
+        },
+        {
+          "id": "e29ecc23-f2df-4335-8b0b-4b84381ca9e3",
+          "name": "Crate",
+          "label": "Crate",
+          "icon": "sku-crate.svg",
+          "tooltip": "Wooden crate for storage",
+          "category": "SKU",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER",
+            "DEALER"
+          ],
+          "attributes": {
+            "DEPTH": 1000,
+            "WIDTH": 1000,
+            "HEIGHT": 1200
+          }
+        },
+        {
+          "id": "a229ecc23-f2df-4335-8b0b-4b84381ca9e3",
+          "name": "Carton",
+          "label": "Carton",
+          "icon": "sku-carton.svg",
+          "tooltip": "Cardboard carton",
+          "category": "SKU",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER",
+            "DEALER"
+          ],
+          "attributes": {
+            "DEPTH": 1000,
+            "WIDTH": 800,
+            "HEIGHT": 1200
+          }
+        },
+        {
+          "id": "cc29ecc23-f2df-4335-8b0b-4b84381ca9e3",
+          "name": "Pallet",
+          "label": "Pallet",
+          "icon": "sku-pallet.svg",
+          "tooltip": "Shipping pallet",
+          "category": "SKU",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER",
+            "DEALER"
+          ],
+          "attributes": {
+            "DEPTH": 1000,
+            "WIDTH": 800,
+            "HEIGHT": 1200
+          }
+        }
+      ]
+    },
+    {
+      "id": "PALLET",
+      "label": "Pallets",
+      "items": [
+        {
+          "id": "de29ecc23-f2df-4335-8b0b-4b84381ca9e3",
+          "name": "Pallet-01",
+          "label": "2 Runner Pallet",
+          "icon": "pallet-2runner.svg",
+          "tooltip": "Standard 2 runner pallet",
+          "category": "PALLET",
+          "type": "2 RUNNER",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER",
+            "DEALER"
+          ],
+          "attributes": {
+            "DEPTH": 1200,
+            "WIDTH": 1200,
+            "HEIGHT": 1500
+          }
+        },
+        {
+          "id": "d1588833-da8c-40e6-bf66-5d5cc73a1b64",
+          "name": "Pallet-02",
+          "label": "3 Runner Pallet",
+          "icon": "pallet-3runner.svg",
+          "tooltip": "Heavy duty 3 runner pallet",
+          "category": "PALLET",
+          "type": "3 RUNNER",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER"
+          ],
+          "attributes": {
+            "DEPTH": 1000,
+            "WIDTH": 1000,
+            "HEIGHT": 1200
+          }
+        }
+      ]
+    },
+    {
+      "id": "MHE",
+      "label": "Material Handling Equipment",
+      "items": [
+        {
+          "id": "caedf8ef-85d0-4977-a526-30d536948c4d",
+          "name": "Fork Lift-1",
+          "label": "Fork Lift Type 1",
+          "icon": "mhe-forklift.svg",
+          "tooltip": "Standard fork lift",
+          "category": "MHE",
+          "type": "Fork Lift",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER"
+          ],
+          "attributes": {
+            "DEPTH": 1200,
+            "WIDTH": 1200,
+            "HEIGHT": 1500
+          }
+        },
+        {
+          "id": "de9ecc23-f2df-4335-8b0b-4b84381ca9e3",
+          "name": "Fork Lift-2",
+          "label": "Fork Lift Type 2",
+          "icon": "mhe-forklift-heavy.svg",
+          "tooltip": "Heavy duty fork lift",
+          "category": "MHE",
+          "type": "Fork Lift",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER"
+          ],
+          "attributes": {
+            "DEPTH": 1200,
+            "WIDTH": 1200,
+            "HEIGHT": 1500
+          }
+        }
+      ]
+    },
+    {
+      "id": "PRODUCT_GROUP",
+      "label": "Product Groups",
+      "items": [
+        {
+          "id": "e243cc23-f2df-4335-8b0b-4b84381ca9e3",
+          "name": "SPR",
+          "label": "Shuttle Pallet Rack",
+          "icon": "product-spr.svg",
+          "tooltip": "Shuttle pallet racking system",
+          "category": "PRODUCT",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER",
+            "DEALER"
+          ],
+          "defaultElement": {
+            "geometry": {
+              "width": 2700,
+              "depth": 1100
+            },
+            "engineeringSeed": {
+              "productGroup": "SPR"
+            }
+          }
+        },
+        {
+          "id": "3b96911b-d684-422f-8107-8cbe021cfc3b",
+          "name": "DDPR",
+          "label": "Double Deep Pallet Rack",
+          "icon": "product-ddpr.svg",
+          "tooltip": "Double deep pallet racking system",
+          "category": "PRODUCT",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER"
+          ],
+          "defaultElement": {
+            "geometry": {
+              "width": 2700,
+              "depth": 2200
+            },
+            "engineeringSeed": {
+              "productGroup": "DDPR"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "STRUCTURE",
+      "label": "Structure Elements",
+      "items": [
+        {
+          "id": "wall-001",
+          "name": "WALL",
+          "label": "Wall",
+          "icon": "wall.svg",
+          "tooltip": "Structural wall",
+          "category": "CIVIL",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER"
+          ],
+          "defaultElement": {
+            "geometry": {
+              "length": 3000,
+              "thickness": 230
+            }
+          }
+        },
+        {
+          "id": "pillar-001",
+          "name": "PILLAR",
+          "label": "Pillar",
+          "icon": "pillar.svg",
+          "tooltip": "Structural pillar/column",
+          "category": "CIVIL",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER"
+          ],
+          "defaultElement": {
+            "geometry": {
+              "radius": 300
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "OPENINGS",
+      "label": "Openings",
+      "items": [
+        {
+          "id": "door-001",
+          "name": "DOOR",
+          "label": "Door",
+          "icon": "door.svg",
+          "tooltip": "Entry/exit door",
+          "category": "OPENING",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER",
+            "DEALER"
+          ],
+          "defaultElement": {
+            "geometry": {
+              "width": 1000,
+              "depth": 100
+            }
+          }
+        },
+        {
+          "id": "window-001",
+          "name": "WINDOW",
+          "label": "Window",
+          "icon": "window.svg",
+          "tooltip": "Window opening",
+          "category": "OPENING",
+          "allowedRoles": [
+            "ADMIN",
+            "DESIGNER"
+          ],
+          "defaultElement": {
+            "geometry": {
+              "width": 1200,
+              "depth": 100
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

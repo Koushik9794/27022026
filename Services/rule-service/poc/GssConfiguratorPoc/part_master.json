@@ -1,0 +1,355 @@
+{
+    "SPR-UPRIGHT-ST20-6500": {
+        "Description": "Upright ST20 - 6500mm",
+        "Family": "UPRIGHT",
+        "Attr": {
+            "Height": 6500,
+            "Capacity": 18000
+        },
+        "WeightKg": 42.5,
+        "InstallTimeMins": 15.0,
+        "UoM": "EA"
+    },
+    "SPR-UPRIGHT-ST20-13000": {
+        "Description": "Upright ST20 - 13000mm",
+        "Family": "UPRIGHT",
+        "Attr": {
+            "Height": 13000,
+            "Capacity": 18000
+        },
+        "WeightKg": 85.0,
+        "InstallTimeMins": 30.0,
+        "UoM": "EA",
+        "UNSPSCCode": "24102099DG34262",
+        "DrawingNo": "IS/HD/S3/547",
+        "RevNo": "R2",
+        "Colour": "Sky Blue",
+        "GFA": "GFA",
+        "CBM": 0.12,
+        "UnitPrice": 3381.30,
+        "DiscountPercent": 0.0
+    },
+    "SPR-BEAM-2700-STD": {
+        "Description": "Beam 2700mm Standard - Orange",
+        "Family": "BEAM",
+        "Attr": {
+            "Span": 2700,
+            "MaxLoad": 2500
+        },
+        "WeightKg": 12.2,
+        "InstallTimeMins": 4.0,
+        "UoM": "EA",
+        "UNSPSCCode": "24102099DG60081",
+        "DrawingNo": "IS/HD/S3/1048",
+        "RevNo": "R4",
+        "Colour": "Deep Orange",
+        "GFA": "GFA",
+        "CBM": 0.34,
+        "UnitPrice": 2285.82,
+        "DiscountPercent": 0.0
+    },
+    "SPR-BEAM-2700-HD": {
+        "Description": "Beam 2700mm Heavy Duty - Orange",
+        "Family": "BEAM",
+        "Attr": {
+            "Span": 2700,
+            "MaxLoad": 3500
+        },
+        "WeightKg": 15.5,
+        "InstallTimeMins": 5.0,
+        "UoM": "EA"
+    },
+    "GSS-RC-200": {
+        "Description": "Row Connector 200mm",
+        "Family": "ROW_CONNECTOR",
+        "Attr": {
+            "Length": 200
+        },
+        "WeightKg": 0.8,
+        "InstallTimeMins": 2.0,
+        "UoM": "EA"
+    },
+    "GSS-BP-2BOLT": {
+        "Description": "Standard Base Plate (2-Bolt)",
+        "Family": "BASEPLATE",
+        "Attr": {
+            "Bolts": 2,
+            "HeavyDuty": 0
+        },
+        "WeightKg": 0.8,
+        "InstallTimeMins": 3.0,
+        "UoM": "EA"
+    },
+    "GSS-BP-4BOLT": {
+        "Description": "Heavy Duty Base Plate (4-Bolt)",
+        "Family": "BASEPLATE",
+        "Attr": {
+            "Bolts": 4,
+            "HeavyDuty": 1
+        },
+        "WeightKg": 1.5,
+        "InstallTimeMins": 5.0,
+        "UoM": "EA",
+        "UNSPSCCode": "24102097DG88838",
+        "DrawingNo": "IS/HD/S3/1619",
+        "RevNo": "R0",
+        "Colour": "Sky Blue",
+        "GFA": "GFA",
+        "CBM": 0.00,
+        "UnitPrice": 260.10,
+        "DiscountPercent": 0.0
+    },
+    "BEAM-SAFETY-PIN": {
+        "Description": "Beam Safety Pin",
+        "Family": "FASTENER",
+        "Attr": {
+            "Security": 1
+        },
+        "WeightKg": 0.05,
+        "InstallTimeMins": 0.5,
+        "UoM": "EA"
+    },
+    "STABILITY-KIT-H6": {
+        "Description": "Stability Bracing Kit (>6:1 Ratio)",
+        "Family": "STABILITY",
+        "Attr": {
+            "Ratio": 6
+        },
+        "WeightKg": 12.0,
+        "InstallTimeMins": 60.0,
+        "UoM": "KIT",
+        "UNSPSCCode": "24102097DG34662",
+        "DrawingNo": "IS/HD/S3/1124",
+        "RevNo": "R0",
+        "Colour": "PP (Light Grey)",
+        "GFA": "GFA",
+        "CBM": 0.00,
+        "UnitPrice": 6.24,
+        "DiscountPercent": 0.0
+    },
+    "REAR-MESH-PANEL": {
+        "Description": "Rear Mesh Security Panel",
+        "Family": "SAFETY",
+        "Attr": {
+            "Width": 2700
+        },
+        "WeightKg": 8.5,
+        "InstallTimeMins": 10.0,
+        "UoM": "EA"
+    },
+    "RAL-2004-ORANGE": {
+        "Description": "Powder Coating - Orange",
+        "WeightKg": 0,
+        "InstallTimeMins": 0,
+        "UoM": "LT"
+    },
+    "GSS-BP-BOLT-M12-100": {
+        "Description": "Anchor Bolt M12x100 (Grouting)",
+        "Family": "FASTENER",
+        "Attr": {
+            "Diameter": 12,
+            "Length": 100
+        },
+        "WeightKg": 0.15,
+        "InstallTimeMins": 2.0,
+        "UoM": "EA"
+    },
+    "GSS-AP-BOLT-M8-25": {
+        "Description": "Hex Bolt & Nut M8x25 (Baseplate-to-Upright)",
+        "Family": "FASTENER",
+        "Attr": {
+            "Diameter": 8,
+            "Length": 25
+        },
+        "WeightKg": 0.05,
+        "InstallTimeMins": 1.5,
+        "UoM": "EA"
+    },
+    "GSS-SHIM-1.4": {
+        "Description": "Metal Shim 1.4mm thk",
+        "Family": "SHIM",
+        "Attr": {
+            "Thickness": 1.4
+        },
+        "WeightKg": 0.1,
+        "InstallTimeMins": 0.5,
+        "UoM": "EA"
+    },
+    "GSS-SHIM-1.0": {
+        "Description": "Metal Shim 1.0mm thk",
+        "Family": "SHIM",
+        "Attr": {
+            "Thickness": 1.0
+        },
+        "WeightKg": 0.08,
+        "InstallTimeMins": 0.5,
+        "UoM": "EA"
+    },
+    "GSS-SHIM-2.0": {
+        "Description": "Metal Shim 2.0mm thk",
+        "Family": "SHIM",
+        "Attr": {
+            "Thickness": 2.0
+        },
+        "WeightKg": 0.12,
+        "InstallTimeMins": 0.5,
+        "UoM": "EA"
+    },
+    "GSS-BRACE-SPACER": {
+        "Description": "Bracing Spacer (Ø17 x 29 x 5)",
+        "Family": "BRACING",
+        "Attr": {
+            "ID": 17,
+            "OD": 29,
+            "Length": 5
+        },
+        "WeightKg": 0.05,
+        "InstallTimeMins": 0.5,
+        "UoM": "EA"
+    },
+    "GSS-BRACE-BOLT-M10-75": {
+        "Description": "Hex Bolt M10x75 (Bracing-to-Frame)",
+        "Family": "FASTENER",
+        "Attr": {
+            "Diameter": 10,
+            "Length": 75
+        },
+        "WeightKg": 0.1,
+        "InstallTimeMins": 1.5,
+        "UoM": "EA"
+    },
+    "GSS-ROW-GUARD-1000": {
+        "Description": "Row Guard for Depth 1000mm",
+        "Family": "SAFETY",
+        "Attr": {
+            "Depth": 1000
+        },
+        "WeightKg": 15.0,
+        "InstallTimeMins": 20.0,
+        "UoM": "EA"
+    },
+    "GSS-VNA-RAIL-INNER": {
+        "Description": "VNA Inner Guide Rail (ISA 100x100x10)",
+        "Family": "VNA",
+        "Attr": {
+            "Type": "INNER",
+            "Length": 3000
+        },
+        "WeightKg": 45.0,
+        "InstallTimeMins": 60.0,
+        "UoM": "EA"
+    },
+    "GSS-GUARD-BOLT-M12-100": {
+        "Description": "Anchor Bolt M12x100 (Guard Grouting)",
+        "Family": "FASTENER",
+        "Attr": {
+            "Diameter": 12,
+            "Length": 100
+        },
+        "WeightKg": 0.15,
+        "InstallTimeMins": 2.0,
+        "UoM": "EA"
+    },
+    "GSS-GUARD-UPRIGHT": {
+        "Description": "Upright Guard (Center Column Guard)",
+        "Family": "SAFETY",
+        "Attr": {
+            "Height": 400
+        },
+        "WeightKg": 5.5,
+        "InstallTimeMins": 10.0,
+        "UoM": "EA"
+    },
+    "GSS-SPLICE-KIT": {
+        "Description": "Upright Splice Kit (Front/Rear)",
+        "Family": "FIXING",
+        "Attr": {
+            "HeightLimit": 12000
+        },
+        "WeightKg": 3.2,
+        "InstallTimeMins": 45.0,
+        "UoM": "EA"
+    },
+    "GSS-STIFFENER-STD": {
+        "Description": "Frame Stiffener (Standard)",
+        "Family": "BRACING",
+        "Attr": {
+            "LoadFactor": 1.2
+        },
+        "WeightKg": 2.1,
+        "InstallTimeMins": 10.0,
+        "UoM": "EA"
+    },
+    "GSS-STIFFENER-BOTTOM": {
+        "Description": "Bottom Stiffener (Heavy Duty)",
+        "Family": "BRACING",
+        "Attr": {
+            "LoadFactor": 1.5
+        },
+        "WeightKg": 2.8,
+        "InstallTimeMins": 15.0,
+        "UoM": "EA"
+    },
+    "GSS-BRACE-H": {
+        "Description": "Frame Bracing - Horizontal",
+        "Family": "BRACING",
+        "Attr": {
+            "Type": "Horizontal"
+        },
+        "WeightKg": 1.2,
+        "InstallTimeMins": 5.0,
+        "UoM": "EA",
+        "UNSPSCCode": "24102099DG59632",
+        "DrawingNo": "IS/HD/S3/559",
+        "RevNo": "R4",
+        "Colour": "Galvanized",
+        "GFA": "GFA",
+        "CBM": 0.01,
+        "UnitPrice": 126.79,
+        "DiscountPercent": 0.0
+    },
+    "GSS-BRACE-D": {
+        "Description": "Frame Bracing - Diagonal",
+        "Family": "BRACING",
+        "Attr": {
+            "Type": "Diagonal"
+        },
+        "WeightKg": 1.5,
+        "InstallTimeMins": 5.0,
+        "UoM": "EA",
+        "UNSPSCCode": "24102099DG59716",
+        "DrawingNo": "IS/HD/S3/559",
+        "RevNo": "R4",
+        "Colour": "Galvanized",
+        "GFA": "GFA",
+        "CBM": 0.02,
+        "UnitPrice": 151.93,
+        "DiscountPercent": 0.0
+    },
+    "GSS-ROW-SPACER-200": {
+        "Description": "Row Spacer 200mm (Double Deep)",
+        "Family": "STABILITY",
+        "Attr": {
+            "Length": 200
+        },
+        "WeightKg": 2.5,
+        "InstallTimeMins": 10.0,
+        "UoM": "EA"
+    },
+    "GSS-VNA-ENTRY-GUIDE": {
+        "Description": "VNA Entry Guide (Set of 2)",
+        "Family": "VNA",
+        "Attr": {
+            "Type": "ENTRY"
+        },
+        "WeightKg": 25.0,
+        "InstallTimeMins": 45.0,
+        "UoM": "SET"
+    },
+    "STEEL-HC-3.0MM": {
+        "Description": "High-Carbon Steel",
+        "WeightKg": 2.5,
+        "InstallTimeMins": 0,
+        "UoM": "KG"
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "$schema": "../schemas/facts-schema.json",
+    "description": "High-load SPR configuration with heavy pallets",
+    "productGroup": "SPR",
+    "facts": {
+        "palletWidth": 1000,
+        "palletDepth": 1200,
+        "palletHeight": 1200,
+        "palletWeight": 2000,
+        "palletsPerLevel": 2,
+        "numberOfLevels": 3,
+        "mheType": "reachTruck",
+        "aisleWidth": 2700,
+        "buildingHeight": 8000,
+        "seismicZone": "medium"
+    },
+    "expectedOutcome": {
+        "success": true,
+        "rackHeight": 5400,
+        "beamType": "4000-heavy",
+        "frameDepth": 1100,
+        "notes": "Heavy-duty components required due to high pallet weight"
+    }
+}

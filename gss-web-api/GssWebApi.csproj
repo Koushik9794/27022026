@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>GssWebApi</AssemblyName>
+    <RootNamespace>GssWebApi</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- CQRS/Messaging -->
+    <PackageReference Include="NSwag.AspNetCore" Version="14.6.3" />
+    <PackageReference Include="WolverineFx" Version="5.9.2" />
+    
+    <!-- API Documentation -->
+    
+    <!-- Resilience -->
+    <PackageReference Include="Polly" Version="8.5.0" />
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="10.0.1" />
+    
+    <!-- Logging -->
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    
+    <!-- Validation -->
+    <PackageReference Include="FluentValidation" Version="11.8.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.8.0" />
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
+    
+    <!-- Authentication -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.1" />
+    
+    <!-- AWS (Optional - for Step Functions) -->
+    <!-- <PackageReference Include="AWSSDK.StepFunctions" Version="3.7.400" /> -->
+  </ItemGroup>
+
+
+
+</Project>

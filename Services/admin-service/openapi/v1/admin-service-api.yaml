@@ -1,0 +1,80 @@
+paths:
+
+  /admin/rules:
+    get:
+      tags:
+        - Admin
+      summary: List business rules
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: skip
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of business rules
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BusinessRule'
+
+components:
+  schemas:
+    BusinessRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ruleId:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        priority:
+          type: integer
+        status:
+          type: string
+          enum: [DRAFT, APPROVED, ARCHIVED]
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+        name:
+          type: string
+
+    Currency:
+      type: object
+      properties:
+        code:
+          type: string
+        symbol:
+          type: string
+        name:
+          type: string
+          application/json:
+            schema:
+              $ref: ./common/schemas.yaml#/AdminUserUpdate
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: ./common/schemas.yaml#/AdminUser

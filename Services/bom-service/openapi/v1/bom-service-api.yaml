@@ -1,0 +1,185 @@
+openapi: 3.0.1
+info:
+  title: BOM Service API
+  description: Bill of Materials generation and management
+  version: v1
+  contact:
+    name: GSS Support
+    email: support@gss.com
+servers:
+  - url: http://localhost:5005
+    description: Local development
+  - url: https://api.gss.com/bom-service
+    description: Production
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: bom-service
+  /api/v1/boms:
+    post:
+      tags:
+        - BOMs
+      summary: Generate a Bill of Materials
+      description: Generate BOM from a warehouse configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateBOMRequest'
+      responses:
+        '201':
+          description: BOM generated successfully
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uuid
+        '400':
+          description: Invalid request
+        '404':
+          description: Configuration not found
+    get:
+      tags:
+        - BOMs
+      summary: List BOMs
+      parameters:
+        - name: configurationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of BOMs
+  /api/v1/boms/{bomId}:
+    get:
+      tags:
+        - BOMs
+      summary: Get BOM by ID
+      parameters:
+        - name: bomId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: BOM details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BOM'
+        '404':
+          description: BOM not found
+  /api/v1/boms/{bomId}/export:
+    get:
+      tags:
+        - BOMs
+      summary: Export BOM
+      description: Export BOM in various formats (Excel, CSV, PDF)
+      parameters:
+        - name: bomId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [excel, csv, pdf]
+      responses:
+        '200':
+          description: BOM export file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: BOM not found
+components:
+  schemas:
+    GenerateBOMRequest:
+      type: object
+      required:
+        - configurationId
+      properties:
+        configurationId:
+          type: string
+          format: uuid
+        includePricing:
+          type: boolean
+          default: true
+        currency:
+          type: string
+          default: USD
+    BOM:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        configurationId:
+          type: string
+          format: uuid
+        totalCost:
+          type: number
+          format: decimal
+        currency:
+          type: string
+        lineItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/BOMLineItem'
+        generatedAt:
+          type: string
+          format: date-time
+    BOMLineItem:
+      type: object
+      properties:
+        skuId:
+          type: string
+          format: uuid
+        skuCode:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+          format: decimal
+        totalPrice:
+          type: number
+          format: decimal

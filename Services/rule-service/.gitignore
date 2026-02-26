@@ -1,0 +1,49 @@
+# .gitignore additions for rule-service
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.DotSettings
+
+# Build output
+bin/
+obj/
+dist/
+
+# Logs
+logs/
+*.log
+*.logs
+
+# Dependencies
+packages/
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+
+# Secrets
+*.pfx
+*.key
+appsettings.production.json
+
+# Test results
+TestResults/
+*.trx
+
+# Build error logs and temporary files
+build-errors.txt
+errors.txt
+*.build.log
+

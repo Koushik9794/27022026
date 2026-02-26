@@ -1,0 +1,102 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "SPR Facts Schema",
+    "description": "Schema for SPR rule evaluation facts",
+    "type": "object",
+    "required": [
+        "description",
+        "productGroup",
+        "facts"
+    ],
+    "properties": {
+        "description": {
+            "type": "string",
+            "description": "Human-readable description of this test case"
+        },
+        "productGroup": {
+            "type": "string",
+            "enum": [
+                "SPR"
+            ],
+            "description": "Product group identifier"
+        },
+        "facts": {
+            "type": "object",
+            "properties": {
+                "palletWidth": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "palletDepth": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "palletHeight": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "palletWeight": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "palletsPerLevel": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "numberOfLevels": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "mheType": {
+                    "type": "string",
+                    "enum": [
+                        "walkie",
+                        "counterbalance",
+                        "reachTruck",
+                        "turretTruck"
+                    ]
+                },
+                "mheMaxLiftHeight": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "aisleWidth": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "buildingHeight": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "seismicZone": {
+                    "type": "string",
+                    "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                    ]
+                }
+            }
+        },
+        "expectedOutcome": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "type": "boolean"
+                },
+                "rackHeight": {
+                    "type": "number"
+                },
+                "beamType": {
+                    "type": "string"
+                },
+                "frameDepth": {
+                    "type": "number"
+                },
+                "notes": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

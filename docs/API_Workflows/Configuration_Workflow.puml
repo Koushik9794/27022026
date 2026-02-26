@@ -1,0 +1,26 @@
+@startuml
+actor User
+participant Frontend
+participant ConfigurationService
+participant RulesEngine
+participant BOMService
+participant QuoteService
+participant Storage (S3/Postgres/DynamoDB)
+
+User -> Frontend: Create from Enquiry
+Frontend -> ConfigurationService: POST /configurations (prefill from enquiry)
+ConfigurationService -> Storage: Persist configuration (Postgres), session (DynamoDB)
+Frontend -> Frontend: Open editor, connect to SignalR
+User -> Frontend: Make change (delta)
+Frontend -> RulesEngine: UpdateConfiguration(sessionId, change) [via SignalR]
+RulesEngine -> Storage: Get applicable rules (cache Redis)
+RulesEngine --> Frontend: ValidationResult (errors/warnings/suggestions)
+User -> Frontend: Save Draft
+Frontend -> ConfigurationService: POST /bom/generate
+BOMService -> Storage: Read product catalog
+BOMService --> Storage: Write BOM to S3
+Frontend -> ConfigurationService: POST /quote/generate
+QuoteService -> PricingService: Apply pricing & exchange rates
+QuoteService --> Storage: Write Quote PDF to S3
+Storage --> Frontend: Return links
+@enduml

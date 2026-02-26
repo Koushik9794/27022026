@@ -1,0 +1,10 @@
+.env
+.env.local
+.env.*.local
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+*.log

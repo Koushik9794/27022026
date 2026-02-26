@@ -1,0 +1,584 @@
+@startuml
+title Warehouse Configurator Platform – Complete Conceptual Data Model (CDM v1)
+
+
+' =========================================================
+' 1. FOUNDATION (TAXONOMY & STANDARDS)
+' =========================================================
+package "1. Foundation & Standards" {
+  class Taxonomy {
+    taxonomyId
+    taxonomyType <<Component | Spatial | Operational>>
+    name
+  }
+
+  class TaxonomyNode {
+    nodeId
+    name
+    category
+  }
+
+  class AttributeDefinition {
+    attributeId
+    name
+    dataType
+    mandatory
+    uom
+  }
+  
+  class AttributeValue {
+    valueId
+    value
+  }
+
+  class Country {
+    countryCode
+    name
+  }
+
+  class Currency {
+    currencyCode
+    symbol
+  }
+
+  class UnitOfMeasure {
+    uomCode
+    quantityType
+  }
+  
+  class Language {
+    languageCode
+    name
+  }
+
+  class MetricSystem {
+    systemType <<SI | Imperial>>
+  }
+  
+  class SafetyFactor {
+    factorId
+    name
+    value
+    factorType <<Seismic | Impact | Load>>
+  }
+
+  Taxonomy "1" o-- "*" TaxonomyNode
+  TaxonomyNode "1" o-- "*" AttributeDefinition
+  AttributeValue "*" -- "1" AttributeDefinition : defined by >
+  AttributeValue "*" -- "1" TaxonomyNode : describes >
+  
+  Country "1" -- "*" Currency
+  Country "1" -- "*" Language
+  Country "1" -- "*" MetricSystem
+  MetricSystem "1" -- "*" UnitOfMeasure
+  SafetyFactor "*" -- "1" Country : regulated by >
+}
+
+' =========================================================
+' 2. CATALOG (COMPONENTS, EQUIPMENT & PRODUCT GROUPS)
+' =========================================================
+package "2. Master Catalog" {
+  class ComponentType {
+    componentTypeId
+    name
+    category
+  }
+  
+  class ProductGroup {
+    pgId
+    name <<SPR | MTSS | MobileRacking>>
+    designLogicType <<SkuBased | LevelBased>>
+  }
+  
+  class PhysicalInterface {
+    interfaceId
+    interfaceType
+    description
+  }
+
+  class AssemblyContext {
+    contextId
+    description
+  }
+
+  class SKUType {
+    skuTypeId
+    name
+  }
+
+  class PalletType {
+    palletTypeId
+    standard
+  }
+
+  class MHEType {
+    mheTypeId
+    category
+  }
+  
+  
+ class Item {
+   skuNumber
+   itemType
+ }
+ 
+ class ItemVariant {
+   variantId
+   dimensions
+   materialGrade
+   weightKg
+   carbonFactor
+ }
+ 
+  class MasterBOM {
+    masterId
+    itemCode (Parent)
+    version
+  }
+
+  class MasterBOMLine {
+    childItemCode
+  }
+
+  TaxonomyNode <|-- ComponentType
+  ProductGroup "1" o-- "*" ComponentType : composed of >
+  ComponentType "1" o-- "*" PhysicalInterface
+  ComponentType "*" -- "*" AssemblyContext
+  
+  SKUType "*" -- "*" AttributeDefinition
+  PalletType "*" -- "*" AttributeDefinition
+  MHEType "*" -- "*" AttributeDefinition
+  
+  ComponentType "1" -- "*" Item
+  Item "1" o-- "*" ItemVariant
+  
+  MasterBOM "1" o-- "*" MasterBOMLine
+  Item "1" -- "1" MasterBOM : defined by >
+  MasterBOMLine "*" -- "1" Item : contains >
+}
+
+' =========================================================
+' 3. PROJECT CONTEXT (CUSTOMER & SITE)
+' =========================================================
+package "3. Project Context" {
+  class Customer {
+    customerId
+    name
+    region
+  }
+
+  class Enquiry {
+    enquiryId
+    status
+    createdOn
+  }
+
+  class Collaborator {
+    collaboratorId
+    roleType <<Designer | Reviewer | SalesRep>>
+    assignedOn
+  }
+
+  class Warehouse {
+    warehouseId
+    location
+    country
+  }
+
+  class Floor {
+    floorId
+    floorNumber
+    clearHeight
+    slabRating
+    pointLoadLimit
+    seismicZone
+  }
+
+  class Area {
+    areaId
+    zoneType
+    fireClassification
+    minAisleWidth
+    permittedMHE
+  }
+  
+  Customer "1" -- "*" Enquiry
+  Enquiry "1" -- "*" Collaborator : has team >
+  
+  Warehouse "1" o-- "*" Floor
+  Floor "1" o-- "*" Area
+}
+
+' =========================================================
+' 4. DESIGN (CONFIGURATION & SOLUTION)
+' =========================================================
+package "4. Solution Design" {
+  class Configuration {
+    configurationId
+    scenarioName
+  }
+
+  class ConfigurationVersion {
+    versionId
+    versionNo
+    status
+    approvedOn
+    designStrategy <<Manual | Auto | Hybrid>>
+  }
+  
+  class CivilLayoutTemplate {
+    templateId
+    templateType <<Generic | ProductGroup | Derived>>
+    version
+    status
+  }
+
+  class WarehouseLayout {
+    layoutId
+  }
+  
+  class InstallationPhase {
+    phaseId
+    name
+    sequenceNo
+    targetDate
+  }
+  
+  class StorageProfile {
+    profileId
+  }
+  
+  class SKU {
+    skuId
+    dimensions
+    weight
+  }
+
+  class Pallet {
+    palletId
+    maxLoad
+  }
+  
+  class MHE {
+    mheId
+    turningRadius
+    maxLiftHeight
+  }
+  
+  class MHEProfile {
+    profileId
+  }
+  
+  class ProductGroupTemplate {
+    templateId
+    name
+    templateType <<System | UserDefined>>
+    configurationDefaultsJson
+    createdBy
+  }
+  
+ class StorageSystemInstance {
+    instanceId
+    productGroup
+    aisleWidth
+    bayCount
+    starterBayCount
+  }
+  
+  Enquiry "1" o-- "*" Configuration
+  Configuration "1" o-- "*" ConfigurationVersion
+  
+  CivilLayoutTemplate "1" o-- "*" Floor
+  CivilLayoutTemplate "*" -- "*" ProductGroup
+  CivilLayoutTemplate "1" -- "*" WarehouseLayout
+  ConfigurationVersion "1" -- "1" WarehouseLayout
+  WarehouseLayout "1" o-- "*" InstallationPhase
+  
+  ProductGroup "1" -- "*" ProductGroupTemplate : has presets >
+  ProductGroupTemplate "1" -- "*" StorageSystemInstance : instantiated as >
+  
+  SKU "*" -- "1" SKUType
+  Pallet "*" -- "1" PalletType
+  StorageProfile "1" o-- "*" SKU
+  StorageProfile "1" -- "1" Pallet
+  
+  MHE "*" -- "1" MHEType
+  MHEProfile "1" o-- "*" MHE
+  
+  ConfigurationVersion "1" -- "1" StorageProfile
+  ConfigurationVersion "1" -- "1" MHEProfile
+  
+  InstallationPhase "1" -- "*" StorageSystemInstance : installed in >
+  Area "1" o-- "*" StorageSystemInstance
+  ConfigurationVersion "1" o-- "*" StorageSystemInstance
+}
+
+' =========================================================
+' 5. ENGINEERING (RULES & VALIDATION)
+' =========================================================
+package "5. Engineering & Validation" {
+  class EngineeringRule {
+    ruleId
+    ruleType <<Safety | Structural | Operational>>
+    severity
+    expression (Formula)
+    failureMessage
+  }
+
+  class RuleTestCase {
+    caseId
+    description
+    inputsJson
+    expectedResult <<Pass | Fail>>
+  }
+
+  class Formula {
+    formulaId
+    expression
+    variables
+    returnType
+  }
+  
+  class UsageCondition {
+    conditionId
+    expression (Formula)
+  }
+
+  class LoadChart {
+    chartId
+    standard
+    certifiedBy
+  }
+
+  class LoadChartEntry {
+    span
+    ratedLoad
+    deflection
+  }
+  
+  class EngineeringEvaluation {
+    evaluationId
+    status
+    evaluatedOn
+  }
+
+  class EvaluationResult {
+    resultId
+    ruleId
+    isPass
+    observedValue
+    message
+  }
+
+  EngineeringRule "1" o-- "*" RuleTestCase : validates >
+  LoadChart "1" o-- "*" LoadChartEntry
+  EngineeringRule "*" -- "1" Formula : uses >
+  EngineeringRule "*" -- "*" LoadChart
+  EngineeringRule "*" -- "*" ComponentType
+  EngineeringRule "*" -- "*" ProductGroup : applies to >
+  EngineeringRule "*" -- "*" EngineeringRule : depends on >
+  
+  EngineeringEvaluation "1" o-- "*" EvaluationResult
+  EvaluationResult "*" -- "1" EngineeringRule
+  EngineeringEvaluation "*" -- "*" LoadChart
+  EngineeringEvaluation "*" -- "1" Floor
+  EngineeringEvaluation "*" -- "1" Area
+  EngineeringEvaluation "*" -- "1" StorageProfile
+  EngineeringEvaluation "*" -- "1" MHEProfile
+  EngineeringEvaluation "*" -- "1" StorageSystemInstance
+  
+  ConfigurationVersion "1" -- "1" EngineeringEvaluation
+  
+  MasterBOMLine "1" -- "1" Formula : quantity defined by >
+  MasterBOMLine "1" -- "1" UsageCondition : included if >
+}
+
+' =========================================================
+' 6. MANUFACTURING (BOM & COSTING)
+' =========================================================
+package "6. Manufacturing & Costing" {
+  class BOM {
+    bomId
+    revision
+    generatedOn
+  }
+
+  class BOMLine {
+    quantity
+    level <<Assembly | Component>>
+  }
+
+  class BOMExplosion {
+    explosionId
+    status
+    log
+  }
+  
+  class RateCard {
+    rateCardId
+    region
+    validFrom
+    validTo
+    status
+  }
+
+  class CostSummary {
+    costId
+    totalCost
+  }
+
+  class CostLine {
+    unitPrice
+    extendedPrice
+  }
+  
+  class SustainabilityMetrics {
+    metricId
+    totalSteelWeightKg
+    totalCarbonFootprintKgCO2
+    recyclabilityScore
+  }
+  
+  ConfigurationVersion "1" -- "1" BOM
+  BOM "1" o-- "*" BOMLine
+  BOMLine "*" -- "1" ItemVariant
+  BOM "1" -- "1" BOMExplosion
+  
+  BOM "1" -- "1" CostSummary
+  BOM "1" -- "1" SustainabilityMetrics : calculated from >
+  
+  CostSummary "1" o-- "*" CostLine
+  CostLine "*" -- "1" ItemVariant
+  CostLine "*" -- "1" RateCard
+  CostSummary "*" -- "1" Currency
+}
+
+' =========================================================
+' 7. PLATFORM SERVICES (FILES, AUDIT, OUTPUTS, IAM)
+' =========================================================
+package "7. Platform Services" {
+  abstract class OutputArtifact {
+    artifactId
+    generatedOn
+  }
+
+  class EngineeringValidationReport
+  class GADrawing
+  class Quote
+  class ComparisonReport
+  class AuditPack
+  class CarbonFootprintReport
+
+  OutputArtifact <|-- EngineeringValidationReport
+  OutputArtifact <|-- BOM
+  OutputArtifact <|-- CostSummary
+  OutputArtifact <|-- GADrawing
+  OutputArtifact <|-- Quote
+  OutputArtifact <|-- ComparisonReport
+  OutputArtifact <|-- AuditPack
+  OutputArtifact <|-- CarbonFootprintReport
+  
+  Quote "1" -- "1" CostSummary : based on >
+  ConfigurationVersion "1" o-- "*" OutputArtifact
+  
+  class FileMetadata {
+    fileId
+    originalName
+    storedName
+    contentType
+    sizeBytes
+    storagePath
+    uploadedBy
+    uploadedAt
+  }
+
+  CivilLayoutTemplate "1" -- "1" FileMetadata : sourced from >
+  OutputArtifact "1" -- "1" FileMetadata : stored as >
+  SKU "1" -- "1" FileMetadata : has 3D model >
+  MHE "1" -- "1" FileMetadata : has 3D model >
+
+  class User {
+    userId
+    email
+  }
+  
+  class Role {
+    roleId
+    roleName
+  }
+
+  class Permission {
+    permissionId
+    action
+  }
+
+  class Scope {
+    scopeType <<Enquiry | Configuration | Version | Warehouse>>
+    scopeId
+  }
+  
+  class PolicyRule {
+    policyRuleId
+    description
+  }
+
+  User "*" -- "*" Role
+  Role "*" -- "*" Permission
+  User "*" -- "*" Scope
+  PolicyRule "*" -- "1" Role
+  PolicyRule "*" -- "1" Scope
+  Collaborator "*" -- "1" User : fulfilled by >
+
+  class AuditLog {
+    logId
+    userId
+    actionType
+    entityType
+    entityId
+    timestamp
+    changesJson
+  }
+
+  class LayoutLock {
+    lockId
+    configurationVersionId
+    lockedBy (userId)
+    lockedAt
+    expiresAt
+  }
+
+  AuditLog "*" -- "1" User : performed by >
+  LayoutLock "1" -- "1" ConfigurationVersion : locks >
+  LayoutLock "1" -- "1" User : held by >
+
+  class SharedLink {
+    linkId
+    configurationVersionId
+    token
+    expiresAt
+    accessType <<ViewOnly>>
+  }
+
+  class UserFeedback {
+    feedbackId
+    userId
+    npsScore
+    comments
+    submittedAt
+  }
+  
+  class Notification {
+    notificationId
+    userId
+    title
+    message
+    isRead
+    sentAt
+  }
+
+  Notification "*" -- "1" User : recipient >
+  SharedLink "1" -- "1" ConfigurationVersion : shares >
+  UserFeedback "*" -- "1" User : provided by >
+}
+
+@enduml

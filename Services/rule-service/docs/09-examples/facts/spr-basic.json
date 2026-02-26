@@ -1,0 +1,23 @@
+{
+    "$schema": "../schemas/facts-schema.json",
+    "description": "Basic SPR configuration with standard parameters",
+    "productGroup": "SPR",
+    "facts": {
+        "palletWidth": 1000,
+        "palletDepth": 1200,
+        "palletHeight": 1500,
+        "palletWeight": 800,
+        "palletsPerLevel": 2,
+        "numberOfLevels": 4,
+        "mheType": "counterbalance",
+        "aisleWidth": 3500,
+        "buildingHeight": 10000,
+        "seismicZone": "low"
+    },
+    "expectedOutcome": {
+        "success": true,
+        "rackHeight": 7200,
+        "beamType": "2500-standard",
+        "frameDepth": 1100
+    }
+}

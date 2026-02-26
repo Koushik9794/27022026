@@ -1,0 +1,169 @@
+{
+    "SPR_System": {
+        "ProductGroup": "SPR_V2",
+        "Defaults": {
+            "General_Limits": {
+                "MAX_RACK_HEIGHT": 12000.0,
+                "MAX_RACK_DEPTH": 1500.0,
+                "MIN_RACK_DEPTH": 500.0,
+                "MAX_USL": 3000.0
+            },
+            "Stability": {
+                "HD_RATIO_LIMIT": 6.0
+            },
+            "Clearances": {
+                "MIN_LEVEL_CLEARANCE": 150.0,
+                "LEVEL_PITCH": 50.0,
+                "MIN_TOP_CLEARANCE": 150.0,
+                "DEFAULT_TOP_CLEARANCE": 200.0,
+                "BEAM_SPAN_CLEARANCE": 10.0,
+                "RACK_WIDTH_SIDE_CLEARANCE": 100.0,
+                "FIRST_LEVEL_OFFSET": 12.0,
+                "LAST_LEVEL_ALLOWANCE": 250.0
+            },
+            "Pallet_Defaults": {
+                "DEFAULT_PALLET_HEIGHT": 150.0,
+                "MAX_PALLET_LOAD": 1000.0,
+                "MAX_PALLET_OVERALL_HEIGHT": 1500.0,
+                "PALLET_OVERHANG_TOTAL": 200.0
+            },
+            "Level_Defaults": {
+                "DEFAULT_LEVEL_TO_LEVEL_HEIGHT": 1400.0,
+                "DEFAULT_FIRST_BEAM_HEIGHT": 1412.0,
+                "DEFAULT_NUMBER_OF_LEVELS": 4.0
+            },
+            "MHE_Defaults": {
+                "MHE_LAST_LEVEL_DEDUCTION": 200.0
+            }
+        },
+        "Input_Parameters": {
+            "Rack_Elevation_Input": {
+                "RackWidth": "number",
+                "RackDepth": "number",
+                "RackHeight": "number",
+                "LoadPerLevel": "number",
+                "NumberOfLevels": "number",
+                "LevelToLevelHeight": "number"
+            },
+            "SKU_Input": {
+                "SKUType": "enum (Drum | Box | Bin | GunnyBag)",
+                "SKUWidth": "number",
+                "SKUDepth": "number",
+                "SKUHeight": "number",
+                "SKUWeight": "number",
+                "Stackable": "boolean",
+                "ReOrientable": "boolean"
+            },
+            "Pallet_Input": {
+                "PalletWidth": "number (optional)",
+                "PalletDepth": "number (optional)",
+                "PalletHeight": "number (optional)",
+                "PalletLoad": "number (optional)"
+            },
+            "MHE_Input": {
+                "MHEType": "enum (Stacker | Forklift | ReachTruck | ArticulatedForklift)"
+            }
+        },
+        "SPR_Unit": {
+            "Structural_System": {
+                "Frame_System": {
+                    "Upright": {
+                        "Rules": [
+                            "this.GetNum(\"RackHeight\") > this.GetNum(\"Defaults.MAX_RACK_HEIGHT\") ? VALIDATE(\"NL001: Frame height limit exceeded\") : true",
+                            "this.GetNum(\"TotalFrameLoad\") > this.GetNum(\"MaxFrameCapacity\") ? VALIDATE(\"NL006: Frame load exceeded\") : true",
+                            "ADD_BOM(\"UPRIGHT\", 2.0, \"EBOM\")",
+                            "ADD_BOM(LOOKUP(\"UPRIGHT\", \"Height\", this.GetNum(\"RackHeight\")), 2.0, \"MBOM\")"
+                        ]
+                    },
+                    "Bracing": {
+                        "Rules": [
+                            "ADD_BOM(\"HORIZONTAL-BRACING\", this.GetNum(\"RackHeight\") / 1000.0, \"EBOM\")",
+                            "ADD_BOM(\"DIAGONAL-BRACING\", 1.0, \"EBOM\")",
+                            "ADD_BOM(LOOKUP(\"HORIZONTAL-BRACING\", \"Span\", this.GetNum(\"RackDepth\")), this.GetNum(\"RackHeight\") / 1000.0, \"MBOM\")",
+                            "ADD_BOM(LOOKUP(\"DIAGONAL-BRACING\", \"Span\", this.GetNum(\"RackDepth\")), 1.0, \"MBOM\")"
+                        ]
+                    },
+                    "BasePlate": {
+                        "Rules": [
+                            "ADD_BOM(\"BASEPLATE\", 2.0, \"EBOM\")",
+                            "ADD_BOM(LOOKUP(\"BASEPLATE\", \"HeavyDuty\", 1.0), 2.0, \"MBOM\")"
+                        ]
+                    }
+                },
+                "Stability_System": {
+                    "Height_Depth_Stability": {
+                        "Rules": [
+                            "this.GetNum(\"RackHeight\") / this.GetNum(\"RackDepth\") > this.GetNum(\"Defaults.HD_RATIO_LIMIT\") ? VALIDATE(\"RH006: Stability ratio exceeded\") : true",
+                            "this.GetNum(\"RackHeight\") / this.GetNum(\"RackDepth\") > this.GetNum(\"Defaults.HD_RATIO_LIMIT\") ? ADD_BOM(\"STABILITY-KIT\", 1.0, \"EBOM\") : true",
+                            "this.GetNum(\"RackHeight\") / this.GetNum(\"RackDepth\") > this.GetNum(\"Defaults.HD_RATIO_LIMIT\") ? ADD_BOM(LOOKUP(\"STABILITY\", \"Span\", this.GetNum(\"RackDepth\")), 1.0, \"MBOM\") : true"
+                        ]
+                    },
+                    "Single_Bay_Stability": {
+                        "Rules": [
+                            "this.Children.Count == 1 ? ADD_BOM(\"TIE-ROD-KIT\", 1.0, \"IBOM\") : true"
+                        ]
+                    },
+                    "Row_Connectivity": {
+                        "Rules": [
+                            "this.GetBool(\"IsDoubleSided\") ? VALIDATE(\"RC006: Row connectors required\") : true",
+                            "this.GetBool(\"IsDoubleSided\") ? ADD_BOM(\"GSS-RC-2001\", this.Children.Count * 2.0, \"IBOM\") : true"
+                        ]
+                    },
+                    "Wall_Connectivity": {
+                        "Rules": [
+                            "this.GetBool(\"IsWallMounted\") ? ADD_BOM(\"WALL-CONNECTOR\", this.Children.Count, \"IBOM\") : true"
+                        ]
+                    }
+                }
+            },
+            "Load_System": {
+                "Beam_Level": {
+                    "Rules": [
+                        "this.GetNum(\"LevelToLevelHeight\") < this.GetNum(\"Defaults.MIN_LEVEL_CLEARANCE\") ? VALIDATE(\"LL001: Minimum level clearance violated\") : true",
+                        "this.GetNum(\"FirstBeamHeight\") < this.GetNum(\"MHE_MinForkHeight\") ? VALIDATE(\"LL002: First beam height invalid\") : true",
+                        "this.GetNum(\"LevelPitch\") != this.GetNum(\"Defaults.LEVEL_PITCH\") ? VALIDATE(\"LL003: Beam pitch must be consistent\") : true"
+                    ]
+                },
+                "Beam": {
+                    "Rules": [
+                        "this.GetNum(\"LoadPerLevel\") > this.GetNum(\"BeamCapacity\") ? VALIDATE(\"BS001: Beam overload\") : true",
+                        "ADD_BOM(\"BEAM\", 2.0, \"EBOM\")",
+                        "ADD_BOM(LOOKUP(\"BEAM\", \"Span\", this.GetNum(\"RackWidth\")), 2.0, \"MBOM\")"
+                    ]
+                },
+                "Beam_Accessories": {
+                    "Rules": [
+                        "ADD_BOM(\"SAFETY-LOCK\", this.Children.Count * 2.0, \"IBOM\")"
+                    ]
+                }
+            },
+            "Safety_And_Accessories": {
+                "Rules": [
+                    "this.GetBool(\"RearMeshRequired\") ? ADD_BOM(\"REAR-MESH-PANEL\", this.GetNum(\"RackHeight\") / 2000.0, \"EBOM\") : true",
+                    "this.GetBool(\"MHE_Traffic\") ? ADD_BOM(\"COLUMN-PROTECTOR\", 2.0, \"EBOM\") : true"
+                ]
+            }
+        },
+        "Row": {
+            "Row_Configuration": {
+                "Rules": [
+                    "this.GetNum(\"UnitsPerRow\") < 2.0 ? VALIDATE(\"RA008: Minimum two units per row\") : true",
+                    "this.GetNum(\"RowLength\") > 15000.0 ? VALIDATE(\"RA011: Cross aisle required every 15m\") : true"
+                ]
+            }
+        },
+        "Layout": {
+            "MHE_Dependent_Clearances": {
+                "Rules": [
+                    "this.GetNum(\"AisleWidth\") < LOOKUP(\"MHE_MIN_AISLE\", \"MHEType\", this.GetNum(\"MHEType\")) ? VALIDATE(\"AC001: Insufficient aisle width\") : true",
+                    "this.GetNum(\"TopClearance\") < this.GetNum(\"Defaults.MIN_TOP_CLEARANCE\") ? VALIDATE(\"AC002: Top clearance insufficient\") : true"
+                ]
+            },
+            "Placement_Rules": {
+                "Rules": [
+                    "VALIDATE(\"PL001: Rack placed after unit validation\")"
+                ]
+            }
+        }
+    }
+}

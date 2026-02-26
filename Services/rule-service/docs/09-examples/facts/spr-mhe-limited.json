@@ -1,0 +1,25 @@
+{
+    "$schema": "../schemas/facts-schema.json",
+    "description": "SPR configuration with limited MHE clearance",
+    "productGroup": "SPR",
+    "facts": {
+        "palletWidth": 1000,
+        "palletDepth": 1200,
+        "palletHeight": 1800,
+        "palletWeight": 1000,
+        "palletsPerLevel": 2,
+        "numberOfLevels": 2,
+        "mheType": "walkie",
+        "mheMaxLiftHeight": 4000,
+        "aisleWidth": 2000,
+        "buildingHeight": 6000,
+        "seismicZone": "low"
+    },
+    "expectedOutcome": {
+        "success": true,
+        "rackHeight": 3900,
+        "beamType": "2500-standard",
+        "frameDepth": 1100,
+        "notes": "Limited to 2 levels due to MHE max lift height constraint"
+    }
+}

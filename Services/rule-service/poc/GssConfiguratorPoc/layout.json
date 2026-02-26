@@ -1,0 +1,65 @@
+{
+    "ProjectName": "GSS SPR Configurator - Test Layout",
+    "Root": {
+        "Type": "Warehouse",
+        "Attributes": {},
+        "Children": [
+            {
+                "Type": "Upright",
+                "Attributes": {
+                    "RackHeight": 8000.0,
+                    "TotalFrameLoad": 10000.0,
+                    "MaxFrameCapacity": 15000.0,
+                    "RackDepth": 1000.0
+                }
+            },
+            {
+                "Type": "Bracing",
+                "Attributes": {
+                    "RackHeight": 8000.0,
+                    "RackDepth": 1000.0
+                }
+            },
+            {
+                "Type": "BasePlate",
+                "Attributes": {}
+            },
+            {
+                "Type": "Height_Depth_Stability",
+                "Attributes": {
+                    "RackHeight": 8000.0,
+                    "RackDepth": 1000.0
+                }
+            },
+            {
+                "Type": "Beam_Level",
+                "RepeatBy": "NumLevels",
+                "Attributes": {
+                    "LevelPitch": 50.0,
+                    "LoadPerLevel": 2400.0,
+                    "BeamCapacity": 3000.0,
+                    "LevelToLevelHeight": 1500.0,
+                    "FirstBeamHeight": 400.0,
+                    "MHE_MinForkHeight": 300.0
+                }
+            },
+            {
+                "Type": "Beam",
+                "RepeatBy": "NumLevels",
+                "Attributes": {
+                    "LoadPerLevel": 2400.0,
+                    "BeamCapacity": 3000.0,
+                    "RackWidth": 2700.0
+                }
+            },
+            {
+                "Type": "Safety_And_Accessories",
+                "Attributes": {
+                    "RearMeshRequired": true,
+                    "MHE_Traffic": true,
+                    "RackHeight": 8000.0
+                }
+            }
+        ]
+    }
+}

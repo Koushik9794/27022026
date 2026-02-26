@@ -1,0 +1,16 @@
+@startuml
+actor User
+participant Frontend
+participant AuthService
+participant IdentityProvider
+participant AuditLog
+
+User -> Frontend: Open Login Page
+Frontend -> AuthService: POST /auth/login {username,password}
+AuthService -> IdentityProvider: Validate credentials (Cognito)
+IdentityProvider --> AuthService: JWT + refresh token
+AuthService -> AuditLog: Log successful login
+AuthService --> Frontend: Return JWT (set cookie) + user profile
+Frontend -> Frontend: Establish SignalR connection (Authorization header)
+Frontend --> User: Redirect to Dashboard
+@enduml

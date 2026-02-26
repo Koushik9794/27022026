@@ -1,0 +1,804 @@
+openapi: 3.0.3
+info:
+  title: Catalog Service API
+  description: |
+    GSS Catalog Service API for managing warehouse storage system catalogs.
+    
+    ## Overview
+    
+    This service manages:
+    - **Component Taxonomy**: Categories, types, and physical component definitions
+    - **Product Groups**: Product families with variant support (SPR, Cantilever, ASRS, etc.)
+    - **SKUs**: Stock Keeping Units for specific products
+    - **Palettes**: UI configuration palettes for DesignDeck
+    
+    ## Contract-First Development
+    
+    This OpenAPI specification is the **source of truth** for the API.
+    Controller interfaces are generated from this file using NSwag.
+    See ADR-005 for the full workflow.
+  version: 1.0.0
+  contact:
+    name: GSS Support
+    email: support@gss.com
+
+servers:
+  - url: http://localhost:60188/api/v1
+    description: Local development (dotnet run)
+  - url: http://localhost:5002/api/v1
+    description: Docker container
+  - url: https://api.gss.com/catalog/v1
+    description: Production
+
+tags:
+  - name: Categories
+    description: Component category management
+  - name: Types
+    description: Component type management
+  - name: ProductGroups
+    description: Product group and variant management
+  - name: SKUs
+    description: Stock keeping unit management
+
+paths:
+  # =============================================================================
+  # Component Categories
+  # =============================================================================
+  /taxonomy/categories:
+    get:
+      tags: [Categories]
+      operationId: getCategories
+      summary: List all component categories
+      parameters:
+        - name: includeInactive
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ComponentCategory'
+
+    post:
+      tags: [Categories]
+      operationId: createCategory
+      summary: Create a new component category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /taxonomy/categories/{id}:
+    get:
+      tags: [Categories]
+      operationId: getCategoryById
+      summary: Get a category by ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentCategory'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Categories]
+      operationId: updateCategory
+      summary: Update a category
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+      responses:
+        '200':
+          description: Category updated
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Categories]
+      operationId: deleteCategory
+      summary: Delete a category
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Category deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /taxonomy/categories/code/{code}:
+    get:
+      tags: [Categories]
+      operationId: getCategoryByCode
+      summary: Get a category by code
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: FRAMES
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentCategory'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # =============================================================================
+  # Component Types
+  # =============================================================================
+  /taxonomy/types:
+    get:
+      tags: [Types]
+      operationId: getComponentTypes
+      summary: List all component types
+      parameters:
+        - name: categoryCode
+          in: query
+          schema:
+            type: string
+          example: FRAMES
+        - name: includeInactive
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: List of component types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ComponentType'
+
+    post:
+      tags: [Types]
+      operationId: createComponentType
+      summary: Create a new component type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTypeRequest'
+      responses:
+        '201':
+          description: Component type created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        '400':
+          description: Invalid request
+
+  /taxonomy/types/{id}:
+    get:
+      tags: [Types]
+      operationId: getComponentTypeById
+      summary: Get a component type by ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Component type details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentType'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Types]
+      operationId: updateComponentType
+      summary: Update a component type
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTypeRequest'
+      responses:
+        '200':
+          description: Component type updated
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Types]
+      operationId: deleteComponentType
+      summary: Delete a component type
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Component type deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /taxonomy/types/code/{code}:
+    get:
+      tags: [Types]
+      operationId: getComponentTypeByCode
+      summary: Get a component type by code
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: UPRIGHT
+      responses:
+        '200':
+          description: Component type details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentType'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # =============================================================================
+  # Product Groups
+  # =============================================================================
+  /taxonomy/product-groups:
+    get:
+      tags: [ProductGroups]
+      operationId: getProductGroups
+      summary: List all product groups
+      parameters:
+        - name: includeInactive
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: List of product groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductGroup'
+
+    post:
+      tags: [ProductGroups]
+      operationId: createProductGroup
+      summary: Create a new product group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductGroupRequest'
+      responses:
+        '201':
+          description: Product group created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        '400':
+          description: Invalid request
+
+  /taxonomy/product-groups/{id}:
+    get:
+      tags: [ProductGroups]
+      operationId: getProductGroupById
+      summary: Get a product group by ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Product group details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductGroup'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [ProductGroups]
+      operationId: updateProductGroup
+      summary: Update a product group
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductGroupRequest'
+      responses:
+        '200':
+          description: Product group updated
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [ProductGroups]
+      operationId: deleteProductGroup
+      summary: Delete a product group
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Product group deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /taxonomy/product-groups/{id}/variants:
+    get:
+      tags: [ProductGroups]
+      operationId: getProductGroupVariants
+      summary: Get variants of a product group
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: List of variants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductGroup'
+
+  /taxonomy/product-groups/code/{code}:
+    get:
+      tags: [ProductGroups]
+      operationId: getProductGroupByCode
+      summary: Get a product group by code
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: SPR
+      responses:
+        '200':
+          description: Product group details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductGroup'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # =============================================================================
+  # SKUs
+  # =============================================================================
+  /sku:
+    get:
+      tags: [SKUs]
+      operationId: getAllSkus
+      summary: Get all active SKUs
+      responses:
+        '200':
+          description: List of SKUs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Sku'
+
+    post:
+      tags: [SKUs]
+      operationId: createSku
+      summary: Create a new SKU
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSkuRequest'
+      responses:
+        '201':
+          description: SKU created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdResponse'
+        '400':
+          description: Invalid request
+
+  /sku/{id}:
+    get:
+      tags: [SKUs]
+      operationId: getSkuById
+      summary: Get a specific SKU by ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: SKU details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sku'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [SKUs]
+      operationId: updateSku
+      summary: Update an existing SKU
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSkuRequest'
+      responses:
+        '200':
+          description: SKU updated
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [SKUs]
+      operationId: deleteSku
+      summary: Delete a SKU (soft delete)
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - name: deletedBy
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: SKU deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# =============================================================================
+# Components
+# =============================================================================
+components:
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    # Common
+    IdResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+
+    # Categories
+    ComponentCategory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateCategoryRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+        sortOrder:
+          type: integer
+          default: 0
+
+    UpdateCategoryRequest:
+      type: object
+      required: [name, sortOrder]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        sortOrder:
+          type: integer
+
+    # Component Types
+    ComponentType:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        categoryId:
+          type: string
+          format: uuid
+        categoryCode:
+          type: string
+        categoryName:
+          type: string
+        parentTypeId:
+          type: string
+          format: uuid
+          nullable: true
+        parentTypeCode:
+          type: string
+          nullable: true
+        attributeSchema:
+          type: object
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateTypeRequest:
+      type: object
+      required: [code, name, categoryCode]
+      properties:
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 255
+        categoryCode:
+          type: string
+        parentTypeCode:
+          type: string
+          nullable: true
+        description:
+          type: string
+          maxLength: 1000
+        attributeSchema:
+          type: object
+
+    UpdateTypeRequest:
+      type: object
+      required: [name, categoryCode]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        categoryCode:
+          type: string
+        parentTypeCode:
+          type: string
+          nullable: true
+        attributeSchema:
+          type: object
+
+    # Product Groups
+    ProductGroup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        parentGroupId:
+          type: string
+          format: uuid
+          nullable: true
+        parentGroupCode:
+          type: string
+          nullable: true
+        isVariant:
+          type: boolean
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateProductGroupRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+        parentGroupCode:
+          type: string
+          nullable: true
+
+    UpdateProductGroupRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        parentGroupCode:
+          type: string
+          nullable: true
+
+    # SKUs
+    Sku:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        glbFile:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateSkuRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 200
+        glbFile:
+          type: string
+          maxLength: 500
+        isActive:
+          type: boolean
+          default: true
+        createdBy:
+          type: string
+
+    UpdateSkuRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 200
+        glbFile:
+          type: string
+          maxLength: 500
+        isActive:
+          type: boolean
+        updatedBy:
+          type: string

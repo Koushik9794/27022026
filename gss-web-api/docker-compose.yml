@@ -1,0 +1,128 @@
+# Docker Compose for local development
+# Runs GSS Web API (BFF) with all dependent microservices
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database (shared by all services)
+  postgres:
+    image: postgres:15-alpine
+    container_name: gss-postgres
+    environment:
+      POSTGRES_USER: gss_user
+      POSTGRES_PASSWORD: gss_password
+      POSTGRES_DB: gss_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U gss_user" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Admin Service
+  admin-service:
+    build:
+      context: ../Services/admin-service
+      dockerfile: Dockerfile
+    container_name: gss-admin-service
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=gss_db;Username=gss_user;Password=gss_password
+    ports:
+      - "5001:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Catalog Service
+  catalog-service:
+    build:
+      context: ../Services/catalog-service
+      dockerfile: Dockerfile
+    container_name: gss-catalog-service
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=gss_db;Username=gss_user;Password=gss_password
+    ports:
+      - "5002:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Rule Service
+  rule-service:
+    build:
+      context: ../Services/rule-service
+      dockerfile: Dockerfile
+    container_name: gss-rule-service
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=gss_db;Username=gss_user;Password=gss_password
+    ports:
+      - "5004:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # GSS Web API (BFF)
+  gss-web-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gss-web-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ServiceEndpoints__AdminService=http://admin-service:8080
+      - ServiceEndpoints__CatalogService=http://catalog-service:8080
+      - ServiceEndpoints__RuleService=http://rule-service:8080
+      - Authentication__Authority=http://admin-service:8080
+      - Authentication__Audience=gss-web-api
+      - Authentication__ValidateIssuer=false
+      - Authentication__ValidateAudience=false
+      - Authentication__ValidateLifetime=false
+      - Cors__AllowedOrigins__0=http://localhost:3000
+      - Cors__AllowedOrigins__1=http://localhost:5173
+    ports:
+      - "5003:8080"
+    depends_on:
+      admin-service:
+        condition: service_healthy
+      catalog-service:
+        condition: service_healthy
+      rule-service:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: gss-network

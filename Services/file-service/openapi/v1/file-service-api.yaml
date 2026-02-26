@@ -1,0 +1,161 @@
+openapi: 3.0.1
+info:
+  title: File Service API
+  description: File upload/download, GLB models, Excel/CSV import/export
+  version: v1
+  contact:
+    name: GSS Support
+    email: support@gss.com
+servers:
+  - url: http://localhost:5003
+    description: Local development
+  - url: https://api.gss.com/file-service
+    description: Production
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: file-service
+  /api/v1/files:
+    post:
+      tags:
+        - Files
+      summary: Upload a file
+      description: Upload files (GLB models, Excel, CSV, etc.)
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileId:
+                    type: string
+                    format: uuid
+                  fileName:
+                    type: string
+                  fileSize:
+                    type: integer
+                  uploadedAt:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid file or file type not allowed
+        '413':
+          description: File too large
+    get:
+      tags:
+        - Files
+      summary: List uploaded files
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of files
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FileMetadata'
+                  totalCount:
+                    type: integer
+                  page:
+                    type: integer
+                  pageSize:
+                    type: integer
+  /api/v1/files/{fileId}:
+    get:
+      tags:
+        - Files
+      summary: Download a file
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: File content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found
+    delete:
+      tags:
+        - Files
+      summary: Delete a file
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: File deleted successfully
+        '404':
+          description: File not found
+components:
+  schemas:
+    FileMetadata:
+      type: object
+      properties:
+        fileId:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+        fileType:
+          type: string
+        uploadedAt:
+          type: string
+          format: date-time
+        uploadedBy:
+          type: string
+          format: uuid

@@ -1,0 +1,164 @@
+openapi: 3.0.1
+info:
+  title: GSS Backend Services - Aggregated API Reference
+  description: |
+    This is a **reference index** of all GSS Backend microservices.
+    
+    ## Purpose
+    This aggregated view provides a comprehensive list of all backend services and their APIs.
+    It serves as a **documentation reference** and **service catalog**.
+    
+    ## Architecture
+    - **BFF (gss-web-api)**: Frontend calls this - aggregates microservices
+    - **Microservices**: Each service is independently deployed with its own API
+    - **This Document**: Reference/catalog only - not for runtime use
+    
+    ## Service-Level OpenAPI Specs (Source of Truth)
+    Each service maintains its own complete OpenAPI specification:
+    
+    | Service | OpenAPI Spec | Swagger UI | Port |
+    |---------|--------------|------------|------|
+    | Admin Service | [Spec](../Services/admin-service/openapi/v1/admin-service-api.yaml) | http://localhost:5001/swagger | 5001 |
+    | Catalog Service | [Spec](../Services/catalog-service/openapi/v1/catalog-service-api.yaml) | http://localhost:5002/swagger | 5002 |
+    | Rule Service | [Spec](../Services/rule-service/openapi/v1/rule-service-api.yaml) | http://localhost:5000/swagger | 5000 |
+    | File Service | [Spec](../Services/file-service/openapi/v1/file-service-api.yaml) | http://localhost:5003/swagger | 5003 |
+    | Configuration Service | [Spec](../Services/configuration-service/openapi/v1/configuration-service-api.yaml) | http://localhost:5004/swagger | 5004 |
+    | BOM Service | [Spec](../Services/bom-service/openapi/v1/bom-service-api.yaml) | http://localhost:5005/swagger | 5005 |
+    | BFF (gss-web-api) | [Spec](../gss-web-api/openapi/v1/bff-api.yaml) | http://localhost:8080/swagger | 8080 |
+    
+    ## For Developers
+    - **Service Development**: Update your service's OpenAPI spec
+    - **Frontend Development**: Use BFF (gss-web-api) API
+    - **Testing**: Use individual service Swagger UIs
+    - **Documentation**: Refer to this index for service catalog
+    
+    ## Related Documentation
+    - [ADR-002: API Contract Governance](../docs/adr/adr-002-api-contract-governance-using-openapi.md)
+    - [ADR-004: REST API Design Standards](../docs/adr/adr-004-rest-api-design-standards.md)
+    - [Service Design Checklist](../docs/service-design-checklist.md)
+    
+  version: 1.0.0
+  contact:
+    name: GSS Platform Team
+    email: platform@gss.com
+
+servers:
+  - url: http://localhost:8080
+    description: BFF (gss-web-api) - Frontend uses this
+  - url: https://api.gss.com
+    description: Production
+
+tags:
+  - name: Admin
+    description: User and authentication management (Port 5001)
+    externalDocs:
+      url: ../Services/admin-service/openapi/v1/admin-service-api.yaml
+  - name: Catalog
+    description: SKU, Pallet, MHE catalog (Port 5002)
+    externalDocs:
+      url: ../Services/catalog-service/openapi/v1/catalog-service-api.yaml
+  - name: Rules
+    description: Business rules engine (Port 5000)
+    externalDocs:
+      url: ../Services/rule-service/openapi/v1/rule-service-api.yaml
+  - name: Files
+    description: File operations (Port 5003)
+    externalDocs:
+      url: ../Services/file-service/openapi/v1/file-service-api.yaml
+  - name: Configuration
+    description: Warehouse configuration (Port 5004)
+    externalDocs:
+      url: ../Services/configuration-service/openapi/v1/configuration-service-api.yaml
+  - name: BOM
+    description: Bill of Materials (Port 5005)
+    externalDocs:
+      url: ../Services/bom-service/openapi/v1/bom-service-api.yaml
+
+paths:
+  # This is a reference index only
+  # For actual API paths, see individual service OpenAPI specs
+  
+  # Health checks for quick reference
+  /admin-service/health:
+    get:
+      tags: [Admin]
+      summary: Admin Service health check
+      description: See full spec at Services/admin-service/openapi/v1/admin-service-api.yaml
+      responses:
+        '200':
+          description: Healthy
+          
+  /catalog-service/health:
+    get:
+      tags: [Catalog]
+      summary: Catalog Service health check
+      description: See full spec at Services/catalog-service/openapi/v1/catalog-service-api.yaml
+      responses:
+        '200':
+          description: Healthy
+          
+  /rule-service/health:
+    get:
+      tags: [Rules]
+      summary: Rule Service health check
+      description: See full spec at Services/rule-service/openapi/v1/rule-service-api.yaml
+      responses:
+        '200':
+          description: Healthy
+          
+  /file-service/health:
+    get:
+      tags: [Files]
+      summary: File Service health check
+      description: See full spec at Services/file-service/openapi/v1/file-service-api.yaml
+      responses:
+        '200':
+          description: Healthy
+          
+  /configuration-service/health:
+    get:
+      tags: [Configuration]
+      summary: Configuration Service health check
+      description: See full spec at Services/configuration-service/openapi/v1/configuration-service-api.yaml
+      responses:
+        '200':
+          description: Healthy
+          
+  /bom-service/health:
+    get:
+      tags: [BOM]
+      summary: BOM Service health check
+      description: See full spec at Services/bom-service/openapi/v1/bom-service-api.yaml
+      responses:
+        '200':
+          description: Healthy
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from authentication
+      
+  schemas:
+    # Common schemas are defined in individual service specs
+    # This is just a reference index
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        service:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+security:
+  - bearerAuth: []
+
+# Note: This is a REFERENCE INDEX only
+# For complete API specifications, see individual service OpenAPI specs
+# Frontend should use BFF (gss-web-api) API, not individual services directly

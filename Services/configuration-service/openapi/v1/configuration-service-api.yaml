@@ -1,0 +1,198 @@
+openapi: 3.0.1
+info:
+  title: Configuration Service API
+  description: Warehouse configuration state and versioning
+  version: v1
+  contact:
+    name: GSS Support
+    email: support@gss.com
+servers:
+  - url: http://localhost:5004
+    description: Local development
+  - url: https://api.gss.com/configuration-service
+    description: Production
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  service:
+                    type: string
+                    example: configuration-service
+  /api/v1/configurations:
+    post:
+      tags:
+        - Configurations
+      summary: Create a new configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConfigurationRequest'
+      responses:
+        '201':
+          description: Configuration created
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uuid
+        '400':
+          description: Invalid request
+    get:
+      tags:
+        - Configurations
+      summary: List configurations
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of configurations
+  /api/v1/configurations/{configurationId}:
+    get:
+      tags:
+        - Configurations
+      summary: Get configuration by ID
+      parameters:
+        - name: configurationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Configuration details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Configuration'
+        '404':
+          description: Configuration not found
+    put:
+      tags:
+        - Configurations
+      summary: Update configuration
+      parameters:
+        - name: configurationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConfigurationRequest'
+      responses:
+        '200':
+          description: Configuration updated
+        '404':
+          description: Configuration not found
+  /api/v1/configurations/{configurationId}/snapshots:
+    post:
+      tags:
+        - Snapshots
+      summary: Create a snapshot of the configuration
+      parameters:
+        - name: configurationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Snapshot created
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uuid
+    get:
+      tags:
+        - Snapshots
+      summary: List snapshots for a configuration
+      parameters:
+        - name: configurationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of snapshots
+components:
+  schemas:
+    CreateConfigurationRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    UpdateConfigurationRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        state:
+          type: object
+    Configuration:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: integer
+        state:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time

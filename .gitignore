@@ -1,0 +1,65 @@
+﻿# .gitignore additions for rule-service
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.DotSettings
+
+# Build output
+bin/
+obj/
+dist/
+
+# Logs
+logs/
+*.log
+*.logs
+
+# Dependencies
+packages/
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+
+# Secrets
+*.pfx
+*.key
+appsettings.production.json
+
+# Test results
+TestResults/
+*.trx
+/Services/GSSDesingConfigurator.Admin/.env.example
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/Git_hub.slnx
+/.vs
+Services/rule-service/build_output.txt
+
+# AWS CDK
+cdk.out/
+.cdk.staging/
+infrastructure/cdk/cdk.out/
+infrastructure/cdk/.cdk.staging/
+infrastructure/cdk/tsconfig.tsbuildinfo
+infrastructure/cdk/*.js
+infrastructure/cdk/*.d.ts
+
+# GssConfiguratorPoc output files
+Services/rule-service/poc/GssConfiguratorPoc/*.txt
+
+infrastructure.zip

@@ -1,0 +1,1406 @@
+[
+    {
+        "configName": "A",
+        "displayName": "A",
+        "unitCount": 90,
+        "specs": {
+            "productGroup": "SPR",
+            "skuUpright": "custom",
+            "skuUprightProfile": "GXL_90_1.8",
+            "skuBracing": "D",
+            "skuBeam": "custom",
+            "skuDeck": "none",
+            "skuAccessory": "none",
+            "levelConfigs": {},
+            "palletLength": 1200,
+            "palletWidth": 1200,
+            "palletHeight": 1400,
+            "palletWeight": 1000,
+            "palletMaterial": "wood",
+            "loadType": "cartons",
+            "palletsPerLevel": 2,
+            "showPallets": true,
+            "materialOnGround": false,
+            "palletRunners": 3,
+            "levels": 5,
+            "beamSpan": 2700,
+            "frameDepth": 1000,
+            "crossAisleGap": 25000,
+            "underpassHeight": 3400,
+            "mheType": "reach_truck",
+            "aisleWidth": 3200,
+            "rowGuard": true,
+            "palletStopper": "SF_back",
+            "layoutStart": "SF",
+            "layoutEnd": "SF",
+            "rowConnectorLength": 200,
+            "columnGuard": false,
+            "mcas": false,
+            "meshCladding": false,
+            "meshCladdingHeight": 100,
+            "signageSafety": false,
+            "signageLoad": false,
+            "signageInternational": false,
+            "clearHeight": 1500,
+            "levelLoad": 2000,
+            "palletOverhang": 100,
+            "beamProfile": "GB_125_1.5",
+            "accessory1": "none",
+            "accessory2": "none"
+        },
+        "units": [
+            {
+                "id": "AUTO_3631921a",
+                "position": {
+                    "x": 876387,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_54362814",
+                "position": {
+                    "x": 878547,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_20fcbbd3",
+                "position": {
+                    "x": 880707,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_de352458",
+                "position": {
+                    "x": 882867,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_1974b1ee",
+                "position": {
+                    "x": 885027,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_ff0b8ff6",
+                "position": {
+                    "x": 887187,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_2ff2bdac",
+                "position": {
+                    "x": 889347,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_65ba0cb3",
+                "position": {
+                    "x": 891507,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_6b0573eb",
+                "position": {
+                    "x": 893667,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_8dde7976",
+                "position": {
+                    "x": 895827,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_bae6689f",
+                "position": {
+                    "x": 897987,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_a941ab85",
+                "position": {
+                    "x": 900147,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_1ade38b3",
+                "position": {
+                    "x": 902307,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_19ffd995",
+                "position": {
+                    "x": 904467,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_f744e6d6",
+                "position": {
+                    "x": 906627,
+                    "y": 419970
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a7727205-4a5a-496e-bc7f-ade3421a6d14",
+                "groupName": "A"
+            },
+            {
+                "id": "AUTO_6aba9d17",
+                "position": {
+                    "x": 876387,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_ba45f3ee",
+                "position": {
+                    "x": 878547,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_94bfddc6",
+                "position": {
+                    "x": 880707,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_a34cb3f1",
+                "position": {
+                    "x": 882867,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_a301b4ea",
+                "position": {
+                    "x": 885027,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_aff17e05",
+                "position": {
+                    "x": 887187,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_57294f8b",
+                "position": {
+                    "x": 889347,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_509fbe1f",
+                "position": {
+                    "x": 891507,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_b6c76b61",
+                "position": {
+                    "x": 893667,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_79c1ee25",
+                "position": {
+                    "x": 895827,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_a0e16904",
+                "position": {
+                    "x": 897987,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_1b747f87",
+                "position": {
+                    "x": 900147,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_b0898d5d",
+                "position": {
+                    "x": 902307,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_4b94f0c0",
+                "position": {
+                    "x": 904467,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_744de1c8",
+                "position": {
+                    "x": 906627,
+                    "y": 418870
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "4f48ddcd-46f6-48fa-afa3-1db124ec4d2c",
+                "groupName": "B"
+            },
+            {
+                "id": "AUTO_1cdb5bf7",
+                "position": {
+                    "x": 876387,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_816da512",
+                "position": {
+                    "x": 878547,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_527fab8d",
+                "position": {
+                    "x": 880707,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_49e31967",
+                "position": {
+                    "x": 882867,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_b6749dc7",
+                "position": {
+                    "x": 885027,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_06ebad7b",
+                "position": {
+                    "x": 887187,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_554530ee",
+                "position": {
+                    "x": 889347,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_0db74f4f",
+                "position": {
+                    "x": 891507,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_1a281b15",
+                "position": {
+                    "x": 893667,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_8b8ffc10",
+                "position": {
+                    "x": 895827,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_b2f6fb9f",
+                "position": {
+                    "x": 897987,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_0d4625b7",
+                "position": {
+                    "x": 900147,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_36459a1b",
+                "position": {
+                    "x": 902307,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_73c6ab17",
+                "position": {
+                    "x": 904467,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_ea9d2135",
+                "position": {
+                    "x": 906627,
+                    "y": 414770
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "d19b3572-e3ea-4c69-8360-b39fc54063e9",
+                "groupName": "C"
+            },
+            {
+                "id": "AUTO_abe6fb57",
+                "position": {
+                    "x": 876387,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_5f9c5417",
+                "position": {
+                    "x": 878547,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_523ecc36",
+                "position": {
+                    "x": 880707,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_553e5d75",
+                "position": {
+                    "x": 882867,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_05710d08",
+                "position": {
+                    "x": 885027,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_d5f302b7",
+                "position": {
+                    "x": 887187,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_37e54771",
+                "position": {
+                    "x": 889347,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_271e3adb",
+                "position": {
+                    "x": 891507,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_b613124c",
+                "position": {
+                    "x": 893667,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_3bf4067a",
+                "position": {
+                    "x": 895827,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_44213225",
+                "position": {
+                    "x": 897987,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_55525479",
+                "position": {
+                    "x": 900147,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_10057865",
+                "position": {
+                    "x": 902307,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_2f2ef41e",
+                "position": {
+                    "x": 904467,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_f07e1357",
+                "position": {
+                    "x": 906627,
+                    "y": 413670
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "c9cc6a87-d969-40ab-9619-007e40535531",
+                "groupName": "D"
+            },
+            {
+                "id": "AUTO_242617f4",
+                "position": {
+                    "x": 876387,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_88a04a1a",
+                "position": {
+                    "x": 878547,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_18e6aeb9",
+                "position": {
+                    "x": 880707,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_5a2252f6",
+                "position": {
+                    "x": 882867,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_12120fe2",
+                "position": {
+                    "x": 885027,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_80e66446",
+                "position": {
+                    "x": 887187,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_4605cb6a",
+                "position": {
+                    "x": 889347,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_8dfdc7aa",
+                "position": {
+                    "x": 891507,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_0164e869",
+                "position": {
+                    "x": 893667,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_2972d9b2",
+                "position": {
+                    "x": 895827,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_8a1656ce",
+                "position": {
+                    "x": 897987,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_fa2aa5bd",
+                "position": {
+                    "x": 900147,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_a0aef016",
+                "position": {
+                    "x": 902307,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_90743d52",
+                "position": {
+                    "x": 904467,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_2c5279a9",
+                "position": {
+                    "x": 906627,
+                    "y": 409570
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "301fed37-eaa0-4d00-95fc-6a979d501521",
+                "groupName": "E"
+            },
+            {
+                "id": "AUTO_ffb28ca8",
+                "position": {
+                    "x": 876387,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_b5686eba",
+                "position": {
+                    "x": 878547,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_b854b0e4",
+                "position": {
+                    "x": 880707,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_86b48ae3",
+                "position": {
+                    "x": 882867,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_887c3703",
+                "position": {
+                    "x": 885027,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_40c88bbf",
+                "position": {
+                    "x": 887187,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_8508b784",
+                "position": {
+                    "x": 889347,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_14933cc6",
+                "position": {
+                    "x": 891507,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_fefc75a2",
+                "position": {
+                    "x": 893667,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_ba596be3",
+                "position": {
+                    "x": 895827,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_c08dbc63",
+                "position": {
+                    "x": 897987,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_39c8e415",
+                "position": {
+                    "x": 900147,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_cc65f781",
+                "position": {
+                    "x": 902307,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_6ab18247",
+                "position": {
+                    "x": 904467,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            },
+            {
+                "id": "AUTO_0fbf527d",
+                "position": {
+                    "x": 906627,
+                    "y": 408470
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "ac89d34f-d3b6-4a6c-b066-91be990e5fb8",
+                "groupName": "F"
+            }
+        ]
+    },
+    {
+        "configName": "config_C",
+        "displayName": "C",
+        "unitCount": 10,
+        "specs": {
+            "productGroup": "SPR",
+            "skuUpright": "custom",
+            "skuUprightProfile": "GXL_90_1.8",
+            "skuBracing": "D",
+            "skuBeam": "custom",
+            "skuDeck": "none",
+            "skuAccessory": "none",
+            "levelConfigs": {},
+            "palletLength": 1200,
+            "palletWidth": 1200,
+            "palletHeight": 1400,
+            "palletWeight": 1000,
+            "palletMaterial": "wood",
+            "loadType": "cartons",
+            "palletsPerLevel": 2,
+            "showPallets": true,
+            "materialOnGround": false,
+            "palletRunners": 3,
+            "levels": 7,
+            "beamSpan": 2700,
+            "frameDepth": 1000,
+            "crossAisleGap": 25000,
+            "underpassHeight": 3400,
+            "mheType": "reach_truck",
+            "aisleWidth": 3200,
+            "rowGuard": true,
+            "palletStopper": "SF_back",
+            "layoutStart": "SF",
+            "layoutEnd": "SF",
+            "rowConnectorLength": 200,
+            "columnGuard": false,
+            "mcas": false,
+            "meshCladding": false,
+            "meshCladdingHeight": 100,
+            "signageSafety": false,
+            "signageLoad": false,
+            "signageInternational": false,
+            "clearHeight": 1500,
+            "levelLoad": 2000,
+            "palletOverhang": 100,
+            "beamProfile": "GB_125_1.5",
+            "accessory1": "none",
+            "accessory2": "none"
+        },
+        "units": [
+            {
+                "id": "AUTO_33c1cd90",
+                "position": {
+                    "x": 889347,
+                    "y": 404370
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a80eaed4-f35a-4834-b3cc-bd8012119b26",
+                "groupName": "G"
+            },
+            {
+                "id": "AUTO_4f0a2427",
+                "position": {
+                    "x": 891507,
+                    "y": 404370
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a80eaed4-f35a-4834-b3cc-bd8012119b26",
+                "groupName": "G"
+            },
+            {
+                "id": "AUTO_ef0480cc",
+                "position": {
+                    "x": 893667,
+                    "y": 404370
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a80eaed4-f35a-4834-b3cc-bd8012119b26",
+                "groupName": "G"
+            },
+            {
+                "id": "AUTO_7ea9bea4",
+                "position": {
+                    "x": 895827,
+                    "y": 404370
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a80eaed4-f35a-4834-b3cc-bd8012119b26",
+                "groupName": "G"
+            },
+            {
+                "id": "AUTO_6eda0541",
+                "position": {
+                    "x": 897987,
+                    "y": 404370
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a80eaed4-f35a-4834-b3cc-bd8012119b26",
+                "groupName": "G"
+            },
+            {
+                "id": "AUTO_100d1df7",
+                "position": {
+                    "x": 900147,
+                    "y": 404370
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a80eaed4-f35a-4834-b3cc-bd8012119b26",
+                "groupName": "G"
+            },
+            {
+                "id": "AUTO_b8930e4a",
+                "position": {
+                    "x": 902307,
+                    "y": 404370
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a80eaed4-f35a-4834-b3cc-bd8012119b26",
+                "groupName": "G"
+            },
+            {
+                "id": "AUTO_2a88a6f8",
+                "position": {
+                    "x": 904467,
+                    "y": 404370
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a80eaed4-f35a-4834-b3cc-bd8012119b26",
+                "groupName": "G"
+            },
+            {
+                "id": "AUTO_63e3bf98",
+                "position": {
+                    "x": 906627,
+                    "y": 404370
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a80eaed4-f35a-4834-b3cc-bd8012119b26",
+                "groupName": "G"
+            },
+            {
+                "id": "AUTO_f981185f",
+                "position": {
+                    "x": 908787,
+                    "y": 404370
+                },
+                "dimensions": {
+                    "w": 2160,
+                    "h": 1100
+                },
+                "groupId": "a80eaed4-f35a-4834-b3cc-bd8012119b26",
+                "groupName": "G"
+            }
+        ]
+    }
+]

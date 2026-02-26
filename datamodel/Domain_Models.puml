@@ -1,0 +1,439 @@
+@startuml GSS_Domain_Models
+
+!define ENTITY_COLOR #E1F5FF
+!define AGGREGATE_COLOR #FFF3E0
+!define VALUE_COLOR #F3E5F5
+
+skinparam classBackgroundColor ENTITY_COLOR
+skinparam classBorderColor #0277BD
+skinparam classArrowColor #01579B
+
+' ============================================================================
+' BUSINESS RULES DOMAIN
+' ============================================================================
+
+package "Business Rules Domain" #FFE0B2 {
+    class BusinessRule {
+        id: Guid <<PK>>
+        --
+        ruleId: string <<UK>>
+        name: string
+        description: string
+        category: string
+        priority: int
+        severity: string (ERROR|WARNING|INFO)
+        enabled: bool
+        productGroups: string (comma-separated)
+        countries: string (comma-separated)
+        effectiveFrom: DateTime
+        effectiveTo: DateTime? (nullable)
+        ruleDefinition: string <<JSON>>
+        status: string (DRAFT|REVIEW|APPROVED|ARCHIVED)
+        createdBy: string
+        createdAt: DateTime
+        approvedBy: string?
+        approvedAt: DateTime?
+        lastModifiedAt: DateTime
+    }
+
+    class RuleCondition {
+        id: Guid <<PK>>
+        businessRuleId: Guid <<FK>>
+        --
+        type: string (AND|OR|NOT)
+        field: string
+        operator: string
+        value: string <<JSON>>
+    }
+
+    class RuleAction {
+        id: Guid <<PK>>
+        businessRuleId: Guid <<FK>>
+        --
+        type: string (VALIDATION_ERROR|VALIDATION_WARNING|ADD_SUGGESTION|APPLY_DISCOUNT)
+        actionDefinition: string <<JSON>>
+    }
+
+    BusinessRule "1" --> "*" RuleCondition
+    BusinessRule "1" --> "*" RuleAction
+}
+
+' ============================================================================
+' PRODUCT CATALOG DOMAIN
+' ============================================================================
+
+package "Product Catalog Domain" #E8F5E9 {
+    class Product {
+        id: Guid <<PK>>
+        --
+        productId: string <<UK>>
+        name: string
+        productGroup: string
+        description: string
+        category: string
+        specifications: string <<JSON>>
+        imagesJson: string? <<JSON>>
+        model3DUrl: string?
+        isActive: bool
+        createdBy: string
+        createdAt: DateTime
+        lastModifiedAt: DateTime
+    }
+
+    class ProductSpecification {
+        id: Guid <<PK>>
+        productId: Guid <<FK>>
+        --
+        width: decimal
+        height: decimal
+        depth: decimal
+        loadCapacity: decimal
+        material: string
+        weight: decimal
+        customAttributes: string <<JSON>>
+    }
+
+    class ProductImage {
+        id: Guid <<PK>>
+        productId: Guid <<FK>>
+        --
+        url: string
+        altText: string
+        imageType: string (MAIN|THUMBNAIL|3D_MODEL)
+        order: int
+    }
+
+    Product "1" --> "*" ProductSpecification
+    Product "1" --> "*" ProductImage
+}
+
+' ============================================================================
+' PRICING & CURRENCY DOMAIN
+' ============================================================================
+
+package "Pricing & Currency Domain" #FCE4EC {
+    class Currency {
+        id: Guid <<PK>>
+        --
+        code: string <<UK>> (ISO 4217)
+        symbol: string
+        name: string
+        decimalPlaces: int
+        isActive: bool
+        createdAt: DateTime
+    }
+
+    class ExchangeRate {
+        id: Guid <<PK>>
+        --
+        fromCurrency: string <<FK>>
+        toCurrency: string <<FK>>
+        rate: decimal
+        effectiveFrom: DateTime
+        effectiveTo: DateTime?
+        source: string (MANUAL|API|SYSTEM)
+        createdAt: DateTime
+    }
+
+    class ProductPricing {
+        id: Guid <<PK>>
+        --
+        productId: Guid <<FK>>
+        currencyCode: string <<FK>>
+        countryCode: string? (nullable)
+        basePrice: decimal
+        createdAt: DateTime
+        lastModifiedAt: DateTime
+    }
+
+    class PricingRule {
+        id: Guid <<PK>>
+        --
+        ruleId: string <<UK>>
+        name: string
+        type: string (VOLUME_DISCOUNT|BULK_PRICING|COUNTRY_SPECIFIC)
+        conditions: string <<JSON>>
+        discountPercentage: decimal?
+        priceAdjustment: decimal?
+        isActive: bool
+        effectiveFrom: DateTime
+        effectiveTo: DateTime?
+    }
+
+    Currency "1" --> "*" ExchangeRate
+    Currency "1" --> "*" ExchangeRate
+    Product "1" --> "*" ProductPricing
+    Currency "1" --> "*" ProductPricing
+}
+
+' ============================================================================
+' LOCALIZATION DOMAIN
+' ============================================================================
+
+package "Localization Domain" #F3E5F5 {
+    class LocalizationKey {
+        id: Guid <<PK>>
+        --
+        key: string <<UK>>
+        category: string
+        description: string
+        createdAt: DateTime
+    }
+
+    class Translation {
+        id: Guid <<PK>>
+        --
+        localizationKeyId: Guid <<FK>>
+        languageCode: string (ISO 639-1)
+        translatedText: string
+        isApproved: bool
+        lastModifiedBy: string
+        lastModifiedAt: DateTime
+    }
+
+    class LanguageLocale {
+        id: Guid <<PK>>
+        --
+        languageCode: string <<UK>>
+        languageName: string
+        countryCode: string?
+        isActive: bool
+    }
+
+    LocalizationKey "1" --> "*" Translation
+    LanguageLocale "1" --> "*" Translation
+}
+
+' ============================================================================
+' CONFIGURATION DOMAIN
+' ============================================================================
+
+package "Configuration Domain" #E0F2F1 {
+    class Configuration {
+        id: Guid <<PK>>
+        --
+        sessionId: string <<UK>>
+        userId: Guid
+        configurationData: string <<JSON>>
+        countryCode: string
+        currencyCode: string
+        name: string
+        description: string?
+        status: string (DRAFT|IN_PROGRESS|COMPLETED|ARCHIVED)
+        createdAt: DateTime
+        lastModifiedAt: DateTime
+    }
+
+    class ConfigurationItem {
+        id: Guid <<PK>>
+        configurationId: Guid <<FK>>
+        --
+        productId: Guid <<FK>>
+        quantity: int
+        customization: string? <<JSON>>
+        order: int
+    }
+
+    class ValidationResult {
+        id: Guid <<PK>>
+        --
+        configurationId: Guid <<FK>>
+        validatedAt: DateTime
+        isValid: bool
+        errorsJson: string <<JSON>>
+        warningsJson: string <<JSON>>
+        suggestionsJson: string <<JSON>>
+    }
+
+    class ValidationError {
+        id: Guid <<PK>>
+        validationResultId: Guid <<FK>>
+        --
+        ruleId: string
+        field: string
+        message: string
+        severity: string
+    }
+
+    class ConfigurationHistory {
+        id: Guid <<PK>>
+        configurationId: Guid <<FK>>
+        --
+        changeType: string (CREATED|MODIFIED|VALIDATED|SUBMITTED)
+        changedBy: string
+        changedAt: DateTime
+        changeData: string <<JSON>>
+    }
+
+    Configuration "1" --> "*" ConfigurationItem
+    Configuration "1" --> "*" ValidationResult
+    Configuration "1" --> "*" ConfigurationHistory
+    ValidationResult "1" --> "*" ValidationError
+    Product "1" --> "*" ConfigurationItem
+}
+
+ ' ============================================================================
+ ' BILL OF MATERIALS (BOM) DOMAIN
+ ' ============================================================================
+
+ package "Bill Of Materials Domain" #FFF3E0 {
+     class BillOfMaterials {
+         id: Guid <<PK>>
+         --
+         configurationId: Guid <<FK>>
+         quoteId: Guid? <<FK>>
+         version: int
+         status: string (DRAFT|RELEASED|ARCHIVED)
+         totalCost: decimal
+         currencyCode: string
+         createdBy: string
+         createdAt: DateTime
+     }
+
+     class BOMLineItem {
+         id: Guid <<PK>>
+         bomId: Guid <<FK>>
+         --
+         partId: Guid <<FK>>
+         productId: Guid? <<FK>>
+         description: string
+         quantity: decimal
+         uom: string
+         unitPrice: decimal
+         totalPrice: decimal
+         currencyCode: string
+         note: string?
+     }
+
+     class Part {
+         id: Guid <<PK>>
+         --
+         partNumber: string <<UK>>
+         name: string
+         productId: Guid? <<FK>>
+         specifications: string <<JSON>>
+         weight: decimal?
+         dimensions: string? <<JSON>>
+         lifecycleStatus: string (ACTIVE|OBSOLETE|REPLACED)
+     }
+
+     class Supplier {
+         id: Guid <<PK>>
+         --
+         name: string
+         leadTimeDays: int
+         contactJson: string <<JSON>>
+         preferred: bool
+     }
+
+     class Costing {
+         id: Guid <<PK>>
+         partId: Guid <<FK>>
+         supplierId: Guid <<FK>>
+         cost: decimal
+         currencyCode: string
+         effectiveFrom: DateTime
+         effectiveTo: DateTime?
+     }
+
+     class BOMVersion {
+         id: Guid <<PK>>
+         bomId: Guid <<FK>>
+         versionNumber: int
+         changeSummary: string
+         createdBy: string
+         createdAt: DateTime
+     }
+
+     class BOMExport {
+         id: Guid <<PK>>
+         bomId: Guid <<FK>>
+         format: string (CSV|XLSX|PDF)
+         s3Url: string
+         generatedAt: DateTime
+     }
+
+     BillOfMaterials "1" --> "*" BOMLineItem
+     BillOfMaterials "1" --> "*" BOMVersion
+     BillOfMaterials "1" --> "*" BOMExport
+     Configuration "1" --> "*" BillOfMaterials
+     BOMLineItem "*" --> "1" Part
+     BOMLineItem "*" --> "1" Product : "optional"
+     Part "1" --> "*" Costing
+     Supplier "1" --> "*" Costing
+ }
+
+' ============================================================================
+' USER & AUDIT DOMAIN
+' ============================================================================
+
+package "User & Audit Domain" #FFF9C4 {
+    class User {
+        id: Guid <<PK>>
+        --
+        email: string <<UK>>
+        firstName: string
+        lastName: string
+        role: string (ADMIN|MANAGER|USER|VIEWER)
+        defaultCountry: string
+        defaultCurrency: string
+        isActive: bool
+        createdAt: DateTime
+        lastLoginAt: DateTime?
+    }
+
+    class AuditLog {
+        id: Guid <<PK>>
+        --
+        userId: Guid? <<FK>>
+        entityType: string
+        entityId: Guid
+        action: string (CREATE|READ|UPDATE|DELETE)
+        oldValues: string? <<JSON>>
+        newValues: string? <<JSON>>
+        timestamp: DateTime
+        ipAddress: string?
+    }
+
+    User "1" --> "*" AuditLog
+}
+
+' ============================================================================
+' RELATIONSHIPS ACROSS DOMAINS
+' ============================================================================
+
+Configuration "1" --> "*" BusinessRule : "validates using"
+Configuration "1" --> "*" Currency : "uses"
+ProductPricing "1" --> "1" Product
+ValidationResult "1" --> "*" BusinessRule : "triggered by"
+User "1" --> "*" Configuration : "creates"
+User "1" --> "*" BusinessRule : "manages"
+
+note right of BusinessRule
+    Rules are configuration-driven,
+    managed via Admin Portal.
+    Stored as JSON for flexibility.
+    Supports: SPATIAL, STRUCTURAL,
+    ACCESSORY, PRICING, COMPLIANCE
+end note
+
+note right of Configuration
+    Represents a warehouse design
+    being created/edited by a user.
+    Real-time validation via
+    WebSocket (SignalR).
+end note
+
+note right of ProductPricing
+    Supports multi-currency pricing
+    with optional country-specific
+    variations.
+end note
+
+note right of ValidationResult
+    Generated by rules engine.
+    Contains errors, warnings,
+    and suggestions.
+end note
+
+@enduml

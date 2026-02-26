@@ -1,0 +1,310 @@
+# User Journey: Generate Bill of Materials (BOM)
+
+**Actor**: Dealer / Design Consultant / Sales
+
+**Preconditions**:
+- User has a completed configuration with all items placed
+- Configuration has passed rule validation
+- User has permission to generate BOMs (`bom.generate`)
+- Pricing data is available for all SKUs and parts
+
+## Main Flow
+
+### 1. Initiate BOM Generation
+User navigates to the configuration and clicks "Generate BOM" button.
+
+### 2. BOM Configuration Options
+System presents BOM generation options:
+- **Currency**: USD, EUR, INR, etc.
+- **Include Pricing**: Yes/No
+- **Include Installation**: Yes/No
+- **Grouping**: By SKU, By Product Group, By Location
+- **Export Format**: Excel, CSV, PDF
+
+### 3. Generate BOM Request
+Frontend sends request to BOM Service:
+```
+POST /api/v1/boms
+{
+  "configurationId": "uuid",
+  "currency": "USD",
+  "includePricing": true,
+  "includeInstallation": true,
+  "groupBy": "ProductGroup"
+}
+```
+
+### 4. BOM Service Processing
+BOM Service performs the following:
+
+**4.1. Fetch Configuration Data**
+- Retrieves configuration from Configuration Service
+- Gets all placed items with quantities and positions
+
+**4.2. Expand Items to Parts**
+- For each SKU/item in configuration:
+  - Fetches SKU details from Catalog Service
+  - Retrieves associated parts and components
+  - Calculates quantities based on configuration
+
+**4.3. Apply Business Rules**
+- Validates against Rules Service for BOM-specific rules
+- Applies quantity multipliers (e.g., spare parts)
+- Adds installation materials if selected
+
+**4.4. Fetch Pricing**
+- Retrieves current pricing for all parts from Catalog Service
+- Applies currency conversion if needed
+- Calculates totals and subtotals
+
+**4.5. Generate BOM Document**
+- Groups items according to user preference
+- Calculates summary totals
+- Creates BOM record in database
+
+### 5. Return BOM Result
+System returns generated BOM:
+```json
+{
+  "bomId": "uuid",
+  "configurationId": "uuid",
+  "status": "Generated",
+  "currency": "USD",
+  "totalAmount": 125000.00,
+  "itemCount": 245,
+  "generatedAt": "2026-01-08T10:30:00Z",
+  "generatedBy": "user-id"
+}
+```
+
+### 6. Display BOM Summary
+Frontend displays BOM summary with:
+- Total cost breakdown
+- Item count by category
+- Preview of top items
+- Export options
+
+### 7. User Reviews BOM
+User can:
+- View detailed line items
+- Filter by product group/category
+- Search for specific parts
+- See pricing breakdown
+- Compare with previous BOMs
+
+### 8. Export BOM (Optional)
+User selects export format and downloads:
+```
+GET /api/v1/boms/{bomId}/export?format=excel
+```
+
+System generates and returns downloadable file.
+
+## Alternate Flows
+
+### A1: Missing Pricing Data
+- System identifies parts without pricing
+- Generates BOM with warning flags
+- Marks items as "Price TBD"
+- Allows user to proceed or cancel
+
+### A2: Configuration Changed
+- If configuration modified after BOM generation
+- System marks BOM as "Outdated"
+- Prompts user to regenerate BOM
+- Maintains history of all BOMs
+
+### A3: Large Configuration
+- For configurations with 1000+ items
+- Process BOM generation asynchronously
+- Show progress indicator
+- Notify user when complete (WebSocket/notification)
+
+### A4: Pricing Update Required
+- If pricing data is stale (>30 days)
+- System prompts to refresh pricing
+- User can choose to use cached or refresh
+- Logs pricing source and timestamp
+
+## API Endpoints
+
+### BOM Generation
+```
+POST /api/v1/boms
+GET /api/v1/boms
+GET /api/v1/boms/{id}
+PUT /api/v1/boms/{id}
+DELETE /api/v1/boms/{id}
+```
+
+### BOM Export
+```
+GET /api/v1/boms/{id}/export?format={excel|csv|pdf}
+```
+
+### Pricing
+```
+GET /api/v1/boms/{id}/pricing
+POST /api/v1/boms/{id}/pricing/recalculate
+```
+
+### Comparison
+```
+POST /api/v1/boms/compare
+{
+  "bomIds": ["uuid1", "uuid2"]
+}
+```
+
+## Data Produced
+
+### BOM Record
+Stored in `bom_service` database:
+```json
+{
+  "id": "uuid",
+  "configurationId": "uuid",
+  "configurationSnapshotId": "uuid",
+  "version": 1,
+  "status": "Generated",
+  "currency": "USD",
+  "includePricing": true,
+  "includeInstallation": true,
+  "groupBy": "ProductGroup",
+  "items": [
+    {
+      "partId": "uuid",
+      "partCode": "P-12345",
+      "description": "Pallet Rack Upright 3m",
+      "quantity": 50,
+      "unitPrice": 125.00,
+      "totalPrice": 6250.00,
+      "productGroup": "Racking",
+      "category": "Structural"
+    }
+  ],
+  "summary": {
+    "totalItems": 245,
+    "totalQuantity": 1250,
+    "subtotal": 120000.00,
+    "installation": 5000.00,
+    "total": 125000.00
+  },
+  "generatedAt": "2026-01-08T10:30:00Z",
+  "generatedBy": "user-id",
+  "expiresAt": "2026-02-08T10:30:00Z"
+}
+```
+
+### BOM Export File
+Excel/CSV/PDF file with:
+- Header: Project details, configuration info, date
+- Line items: Part code, description, quantity, unit price, total
+- Summary: Subtotals by category, grand total
+- Footer: Terms, validity period, generated by
+
+### Audit Trail
+- `BOMHistory` entry for generation event
+- Link to configuration snapshot
+- User who generated BOM
+- Timestamp and parameters used
+
+## Postconditions
+
+- BOM is generated and stored in database
+- Configuration snapshot is created (immutable reference)
+- User can view, export, and share BOM
+- BOM is available for comparison with future versions
+- Audit trail is complete
+
+## Business Rules
+
+### BR-BOM-001: Configuration Must Be Valid
+- Configuration must pass all rule validations
+- No critical errors allowed
+- Warnings are acceptable with user acknowledgment
+
+### BR-BOM-002: Pricing Currency
+- All pricing must be in same currency
+- Currency conversion uses latest rates
+- Conversion rate is logged with BOM
+
+### BR-BOM-003: BOM Expiry
+- BOMs expire after 30 days (configurable)
+- Expired BOMs marked as "Expired"
+- User must regenerate for current pricing
+
+### BR-BOM-004: Installation Calculation
+- Installation cost = 4% of material cost (configurable)
+- Can be overridden by admin users
+- Installation items added as separate line items
+
+### BR-BOM-005: Spare Parts
+- 5% spare parts added for consumables (configurable)
+- Structural items: no spares
+- Logged as separate line items
+
+## Integration Points
+
+### Configuration Service
+- `GET /api/v1/configurations/{id}` - Fetch configuration data
+- `POST /api/v1/configurations/{id}/snapshots` - Create snapshot
+
+### Catalog Service
+- `GET /api/v1/skus/{id}` - Get SKU details and parts
+- `GET /api/v1/parts/{id}` - Get part details and pricing
+- `GET /api/v1/pricing` - Batch pricing lookup
+
+### Rule Service
+- `POST /api/v1/rules/validate` - Validate configuration
+- `GET /api/v1/rules/bom` - Get BOM-specific rules
+
+### File Service
+- `POST /api/v1/files` - Upload generated BOM file
+- `GET /api/v1/files/{id}` - Download BOM export
+
+## Performance Considerations
+
+- **Small configurations** (<100 items): Synchronous generation (<2 seconds)
+- **Medium configurations** (100-500 items): Synchronous with caching (~5 seconds)
+- **Large configurations** (>500 items): Asynchronous processing with notification
+
+## Security & Permissions
+
+Required permissions:
+- `bom.generate` - Generate BOM
+- `bom.view.own` - View own BOMs
+- `bom.view.all` - View all BOMs (Admin/Sales)
+- `bom.export` - Export BOM
+- `bom.pricing.view` - View pricing details
+
+## Error Handling
+
+### E-BOM-001: Configuration Not Found
+- HTTP 404
+- Message: "Configuration not found or you don't have access"
+
+### E-BOM-002: Invalid Configuration
+- HTTP 400
+- Message: "Configuration has validation errors. Please fix before generating BOM"
+- Include list of validation errors
+
+### E-BOM-003: Missing Pricing
+- HTTP 422
+- Message: "Pricing data missing for {count} items"
+- Include list of items without pricing
+
+### E-BOM-004: Generation Failed
+- HTTP 500
+- Message: "BOM generation failed. Please try again"
+- Log error details for investigation
+
+---
+
+**Related Journeys**:
+- [02_Create_Configuration_From_Enquiry.md](02_Create_Configuration_From_Enquiry.md)
+- [03_Update_Configuration.md](03_Update_Configuration.md)
+- [04_Import_Civil_Layout.md](04_Import_Civil_Layout.md)
+
+**Last Updated**: January 2026  
+**Maintained By**: GSS Development Team

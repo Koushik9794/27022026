@@ -1,0 +1,29 @@
+# Ignore build artifacts
+**/bin/
+**/obj/
+
+# Ignore .env files (keep .env.example)
+**/.env
+**/.env.local
+
+# Ignore IDE files
+**/.vs/
+**/.vscode/
+**/.idea/
+
+# Ignore OS files
+**/.DS_Store
+**/Thumbs.db
+
+# Ignore git
+**/.git/
+**/.gitignore
+
+# Ignore documentation (already in image)
+**/README.md
+**/CONTRIBUTING.md
+**/docs/
+
+# Ignore test files
+**/tests/
+**/*.Tests/

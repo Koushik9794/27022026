@@ -1,0 +1,200 @@
+﻿Epic,req id,req desc
+Civil Layout Import,GSS_DC_SyRS_410100,"The system shall allow users to import civil layout files in DWG, DXF, and PDF formats."
+Civil Layout Import,GSS_DC_SyRS_410101,The system shall allow users to start with a default civil template and edit it.
+Civil Layout Import,GSS_DC_SyRS_410102,The system shall minimize preprocessing time and provide user-friendly import workflows.
+Civil Layout Import,GSS_DC_SyRS_410103,"In case there are Pre-Processing steps, it should be easy and quick process"
+Civil Layout Import,GSS_DC_SyRS_410104,The system shall provide a searchable library of civil components for drag-and-drop placement or click-to-place interactions.
+Civil Layout Import,GSS_DC_SyRS_410105,The system shall support freeform drawing of custom civil entities with precision tools.
+Civil Layout Import,GSS_DC_SyRS_410106,"The drawing interface shall support snapping, alignment, and scaling features for precision."
+Civil Layout Import,GSS_DC_SyRS_410107,The system shall support uploading multiple civil layouts into a design deck and generate separate PDF outputs for each defined region within the layout.
+User Access Control,GSS_DC_SyRS_410200,The system shall allow dealers to access the GSS Design Configurator app via the Dealer App without requiring separate authentication.
+User Access Control,GSS_DC_SyRS_410201,The system shall allow Godrej HO to access the GSS Design Configurator app via the Godrej Sales App without requiring separate authentication.
+User Access Control,GSS_DC_SyRS_410202,"The system shall allow users to add, delete, or modify the civil layout from the Design Deck."
+Revision Management,GSS_DC_SyRS_410203,The system shall allow dealers to create up to 50 revisions for each layout design.
+Revision Management,GSS_DC_SyRS_410204,"The system shall assign a unique, sequential version number to each revision (e.g., Revision 1, Revision 2, etc.)."
+Revision Management,GSS_DC_SyRS_410205,"The system shall send a notification to the Enquiry App and the Dealer App whenever a new revision is created, including metadata such as revision number, timestamp, reason for revision (if provided), and dealer ID."
+Revision Management,GSS_DC_SyRS_410206,The system shall allow only one user to edit a specific version of a layout at any given time.
+Revision Management,GSS_DC_SyRS_410207,The system shall display a lock or “read-only” status to other users when a version is being edited.
+Revision Management,GSS_DC_SyRS_410208,The system shall allow users to clone an existing version to create a new revision.
+Revision Management,GSS_DC_SyRS_410209,"The system shall display in the UI which version is being edited, who is editing it, and provide an option to create a new revision."
+Revision Management,GSS_DC_SyRS_410210,"The system shall allow dealers to view the complete version history of a layout, including creator, timestamp, and summary of changes (if available)."
+Revision Management,GSS_DC_SyRS_410211,"The system shall maintain an audit log for all revision-related activities, capturing user ID, timestamp, action type, revision ID, reason for revision (if provided), and optional IP address or device info."
+Revision Management,GSS_DC_SyRS_410212,"The system shall restrict access to audit logs to authorized roles only (e.g., Admin, QA, Audit)."
+Revision Management,GSS_DC_SyRS_410213,The system shall provide access to audit logs via the Admin Dashboard and allow export for compliance reviews.
+Revision Management,GSS_DC_SyRS_410214,The system shall optionally integrate audit logs with centralized logging systems.
+Revision Management,GSS_DC_SyRS_410215,The number of design revisions to be displayed in the final output shall be configurable by the admin user.
+Design Deck Features,GSS_DC_SyRS_410216,The system shall allow users to draw lines that display dynamic length measurements during creation in realtime.
+Design Deck Features,GSS_DC_SyRS_410217,"The system shall enable line drawing constrained to predefined angles (0°, 45°, 90°) via control options."
+Design Deck Features,GSS_DC_SyRS_410218,The system shall automatically snap door components to wall elements for accurate placement for both vertical and horizontal walls.
+Design Deck Features,GSS_DC_SyRS_410219,The system shall provide undo and redo functionality for all user actions in the editor.
+Design Deck Features,GSS_DC_SyRS_410220,The system shall allow users to drag and drop SPR components onto the civil layout canvas.
+Design Deck Features,GSS_DC_SyRS_410221,The system shall enable replication of selected SPR components within the layout horizontally or vertically.
+Design Deck Features,GSS_DC_SyRS_410222,The system shall display alignment guides to assist in positioning elements relative to others.
+Design Deck Features,GSS_DC_SyRS_410223,The system shall prevent placement of elements in restricted zones such as pillars or structural constraints.
+Design Deck Features,GSS_DC_SyRS_410224,The system shall allow users to modify the colour properties of objects in design deck.
+Design Deck Features,GSS_DC_SyRS_410225,The system shall provide an option to hide dimension labels on drawn elements.
+Design Deck Features,GSS_DC_SyRS_410226,The system shall allow deletion of selected elements directly from the properties pane.
+Design Deck Features,GSS_DC_SyRS_410227,The system shall support keyboard shortcuts for frequently used actions to improve efficiency.
+Design Deck Features,GSS_DC_SyRS_410228,The system shall allow users to toggle measurement units between feet and inches.
+Design Deck Features,GSS_DC_SyRS_410229,The system shall provide a freehand drawing tool for sketching custom shapes.
+Design Deck Features,GSS_DC_SyRS_410230,The system shall enable drawing of basic geometric shapes such as circles and rectangles.
+Design Deck Features,GSS_DC_SyRS_410231,The system shall allow users to select multiple objects and lock or unlock them to prevent or enable modifications.
+Design Deck Features,GSS_DC_SyRS_410232,The system shall allow users to group selected objects and ungroup them so they can be moved or manipulated as a single entity.
+Design Deck Features,GSS_DC_SyRS_410233,The system shall allow users to resize objects either by dragging with the mouse or by entering dimensions in the properties pane.
+Layout Configuration,GSS_DC_SyRS_410300,The system shall support both manual and automatic layout based on civil constraints.
+Layout Configuration,GSS_DC_SyRS_410301,The system shall allow layout creation starting with either a unit or an aisle.
+Layout Configuration,GSS_DC_SyRS_410302,"The system shall auto-adjust layout based on pillar interference, space available and stability guidelines."
+Layout Configuration,GSS_DC_SyRS_410303,"The system shall update capacity table, price, and weight metrics in real time."
+Layout Configuration,GSS_DC_SyRS_410304,The system shall support hybrid editing—automatic layout with manual fine-tuning.
+Layout Configuration,GSS_DC_SyRS_410305,The system shall assign unique rack names and auto-match with existing configurations.
+Layout Configuration,GSS_DC_SyRS_410306,"The system shall provide a one-click option to Change unit properties, Match properties with another unit, Add or remove underpass ."
+Layout Configuration,GSS_DC_SyRS_410307,"At the start of layout preparation, the user shall be able to choose one of the following. Default layout and elevation, then edit. Create a new layout from scratch. Import and draw based on external inputs."
+Layout Configuration,GSS_DC_SyRS_410308,"After configuring a rack, A unique rack name shall be assigned. If the new rack matches an existing configuration, the name shall auto-match with the existing rack."
+Layout Configuration,GSS_DC_SyRS_410309,"When placing or modifying a rack, the system shall automatically compare with load charts and stability guidelines, auto-calculate component sections and provide alerts for any violations or mismatches."
+Layout Configuration,GSS_DC_SyRS_410310,"Users shall be able to disable a selected rack. If a rack is disabled, the adjacent rack shall be treated as a main unit, not an addon."
+Layout Configuration,GSS_DC_SyRS_410311,"If a pillar interferes with rack placement the layout shall be automatically adjusted based on Load charts, Stability guidelines, Tie beam locations, Back bracing requirements and Base plate types."
+Layout Configuration,GSS_DC_SyRS_410312,"Any change made to a rack shall be reflected in all racks with the same configuration. If layout adjustment is required, the system shall auto-adjust, and alerts shall be provided for errors or conflicts. Alert should be shown to the user when updating configuration—confirm whether to apply changes to only selected units or all units."
+Layout Configuration,GSS_DC_SyRS_410313,Users shall be able to select rack accessories for individual racks and for a row of racks within the layout.
+Layout Configuration,GSS_DC_SyRS_410314,"The system must allow users to continue editing the design deck while offline, ensuring no data loss during connectivity interruptions."
+Layout Configuration,GSS_DC_SyRS_410315,"When internet connectivity is restored, the system must automatically sync offline changes to the server without user intervention."
+Layout Configuration,GSS_DC_SyRS_410316,"While offline, navigation to other pages or modules is not supported. If the user navigates away, unsaved data loss may occur due to lack of synchronization."
+Layout Configuration,GSS_DC_SyRS_410317,"When the application detects loss of internet connectivity, it must display a clear message to the user indicating offline status."
+Layout Configuration,GSS_DC_SyRS_410317,"The system shall automatically save user progress in the design deck without disrupting workflow, maintaining version history and providing subtle save confirmation indicators. There shall also be an option to turn on/off the Auto Save feature."
+SKU & Pallet Configuration,GSS_DC_SyRS_410400,"The system shall allow selection of SKUs and pallets with material options (wood, plastic, metal)."
+SKU & Pallet Configuration,GSS_DC_SyRS_410401,The system shall provide 3D visualization of SKUs during selection.
+SKU & Pallet Configuration,GSS_DC_SyRS_410402,Admins shall be able to create new SKU types via 3D model uploads in .glb format
+SKU & Pallet Configuration,GSS_DC_SyRS_410403,"The system shall support configuration of pallet runners, orientation, and overhang."
+SKU & Pallet Configuration,GSS_DC_SyRS_410404,The system shall support mixed SKU layouts within a single design and provide option to user to modify it.
+MHE Selection,GSS_DC_SyRS_410500,The system shall provide a pre-defined list of MHE types and allow custom additions. Name and properties of selected MHE should be displayed in properties pane in Design Deck.
+MHE Selection,GSS_DC_SyRS_410501,Users shall be able to modify MHE properties during layout creation.
+MHE Selection,GSS_DC_SyRS_410502,The system shall determine bottom beam requirements based on selected MHE.
+MHE Selection,GSS_DC_SyRS_410503,Admin Users shall be able to add a new MHE model if it is not available in the preferred list.
+Unit Configuration,GSS_DC_SyRS_410600,The system shall support multiple unit types and product groups in a single layout.
+Unit Configuration,GSS_DC_SyRS_410601,"The system shall calculate and display utilization percentages for Frames, Beams and provide optimized configuration suggestions based on utilization data."
+Unit Configuration,GSS_DC_SyRS_410602,The system shall automatically select upright and beam sections with the lowest cost that meet the configuration and load requirements.
+Unit Configuration,GSS_DC_SyRS_410603,The system shall provide a toggle to Show/Hide all SKUs in Elevation view and Output reports.
+Unit Configuration,GSS_DC_SyRS_410604,"The system shall allow users to hide individual SKUs, removing them from Elevation view, All analytics and calculations."
+Unit Configuration,GSS_DC_SyRS_410605,The system shall allow users to choose the design logic Based on SKU orientation or Based on level-wise configuration.
+Unit Configuration,GSS_DC_SyRS_410606,"The system shall provide a checkbox: “Material on Ground”. If unchecked, a bottom beam shall be automatically added to the unit."
+Unit Configuration,GSS_DC_SyRS_410607,"The system shall provide an option: “All levels are same.” If selected, all levels shall have identical configurations. If not selected, users shall be able to configure each level independently."
+Unit Configuration,GSS_DC_SyRS_410608,The system shall allow users to specify the total number of levels (with beams).
+Unit Configuration,GSS_DC_SyRS_410609,"The system shall allow users to Select a level, modify accessories, Change the number of pallets/SKUs in that level."
+Unit Configuration,GSS_DC_SyRS_410610,The system shall allow selection of Level accessories and Rack accessories to all similar units or to only selected units
+Unit Configuration,GSS_DC_SyRS_410611,The system shall allow users to change the component type of a selected unit. Only upgrades to higher sections shall be permitted.
+Product Group Management,GSS_DC_SyRS_410700,"The system shall support multiple product groups within a single layout. The current scope of the system shall include support for two product groups: Selective Pallet Racking and Multi-Tier Shelving System, each with its own configuration rules and design logic."
+Product Group Management,GSS_DC_SyRS_410701,The system shall validate compatibility between selected product groups.
+Design Outputs ,GSS_DC_SyRS_410800,"The system shall export BOM, 2D/3D drawings, and assembly documents in DWG/DXF/PDF formats."
+Design Outputs ,GSS_DC_SyRS_410801,"The system shall generate two PDF outputs for each design: one high-quality version and one Standard-quality version, for both 2D General Arrangement layout and assembly Drawing."
+Design Quality,GSS_DC_SyRS_410901,The system shall maintain drawing quality equivalent to CAD standards.
+Design Quality,GSS_DC_SyRS_410903,"The system shall generate different drawing templates based on user type—HO templates with Godrej logo, and Dealer templates with both Godrej and dealer logos."
+Design Quality,GSS_DC_SyRS_410904,The system shall embed realistic visual representations of selected SKUs within the DWG drawings to enhance clarity and accuracy.
+Design Quality,GSS_DC_SyRS_410905,"The system shall organize output drawing DXF into predefined layers—such as beams/uprights, pillars/constraints, and annotations—while restricting users from creating custom layers."
+Design Quality,GSS_DC_SyRS_410906,"The system shall include X-X and Y-Y cross-sectional views of the layout, with integrated civil layout details for enhanced structural clarity."
+Design Quality,GSS_DC_SyRS_410907,"The system shall ensure all layout dimensions are clearly visible, with dimension scale auto-adjusting based on layout size to maintain readability."
+Design Quality,GSS_DC_SyRS_410908,The system shall provide options to add annotations in the form of text notes and graphical images along with formatting options. Only predefined images from library can be added as annotations.
+Design Quality,GSS_DC_SyRS_410909,The system shall provide options to add annotations in output PDF. Also the system shall support an option to preview the PDF.
+Production Inputs,GSS_DC_SyRS_411000,"The software shall export steel and powder usage data in Excel format based on filters such as order ID, financial year, region, branch, and month."
+Production Inputs,GSS_DC_SyRS_411001,The software shall provide an option to combine multiple orders and generate a summarized offtake report.
+Advanced Features ,GSS_DC_SyRS_411100,"The system shall enforce geometric constraints—perpendicular, parallel, fixed offset, and equal spacing—augmented by smart snapping to grids, guides, and objects, with visual hints and constraint locks to enable fast, error‑free editing in 2D layouts."
+Advanced Features ,GSS_DC_SyRS_411101,"The system shall support multi‑select and grouping of components with lock/unlock, align, and distribute operations (including equal spacing), and shall provide attribute‑based filtering (e.g., PG, aisle, level, violations) to isolate and apply batch actions to the filtered selection"
+Advanced Features ,GSS_DC_SyRS_411102,"The system shall maintain a full undo/redo stack with labelled checkpoints for key actions, support safe recovery after unexpected interruptions, and enforce a configurable limit on history (10 steps) to optimize performance."
+Advanced Features ,GSS_DC_SyRS_411103,"The system shall allow users to switch between metric (millimetres) and imperial (inches) units seamlessly, ensuring accurate conversion for all dimensions, measurements, and displayed values in 2D layouts and BOM."
+Advanced Features ,GSS_DC_SyRS_411104,"The system shall provide a keyboard‑driven command palette (e.g., Ctrl/Cmd+K) to jump to racks, aisles, and SKUs and to execute context‑aware actions, fully operable via keyboard with configurable shortcuts."
+Advanced Features ,GSS_DC_SyRS_411105,The system shall allow saving and reusing civil and layout templates with versioning and associated metadata and clearly indicate to the user when a layout is derived from a template.
+Advanced Features ,GSS_DC_SyRS_411106,"The system shall support side‑by‑side comparison of multiple layouts (e.g., A/B/C) and a KPI panel reporting metrics such as space occupied and number of racks (and other configurable KPIs), with options to export/share the comparison."
+Advanced Features ,GSS_DC_SyRS_411108,"The system shall manage rule specifications as unit‑testable artifacts with golden test cases and a certification badge displayed when all golden cases pass; core rules shall be non‑editable by administrators; any rule modification shall trigger an alert, be captured with full version and audit history, and be summarized in a monthly change-and-compliance report."
+Advanced Features ,GSS_DC_SyRS_411109,"The system shall display component-level changes in the Bill of Materials (BOM) between revisions, including added, removed, and modified items, and compute associated cost deltas to provide a clear financial impact of design changes."
+Advanced Features ,GSS_DC_SyRS_411111,The system shall read component availability and lead‑time values from predefined columns in the Master BOM structure and automatically flag obsolescence at the component level; on first detection show a pop‑up notification to the user and thereafter persist the alert in a Notification Center for a configured defined period of time
+Advanced Features ,GSS_DC_SyRS_411112,"The system shall allow sharing of view-only links as a public link to the customer, with configurable expiration dates, watermarking of shared content, and enforcement of view-only permissions; additionally, the system shall capture recipient feedback and persist it for review."
+Advanced Features ,GSS_DC_SyRS_411113,The system shall provide a lightweight feedback widget for quick user input and include Net Promoter Score (NPS) functionality to capture user satisfactions and identify power users.
+Advanced Features ,GSS_DC_SyRS_411114,"The system shall visualize pedestrian safety zones, vehicle movement zones, buffer areas, and docking zones within the 2D/3D layout to ensure compliance with safety standards and improve operational planning."
+Advanced Features ,GSS_DC_SyRS_411115,– Put on Hold
+Advanced Features ,GSS_DC_SyRS_411116,All rule specifications defined in the configuration must be enforced and covered during validation and output generation.
+Advanced Features ,GSS_DC_SyRS_411117,Administrative rule changes shall require approval from two authorized admin users before becoming effective.
+Advanced Features ,GSS_DC_SyRS_411118,The system shall allow admin users to add comments for each rule while adding/editing to provide context or justification.
+Advanced Features ,GSS_DC_SyRS_411119,"When editing a rule, updating the rule description shall be mandatory before saving changes."
+Advanced Features ,GSS_DC_SyRS_411120,"The system shall maintain a complete audit trail of all rule changes, including timestamps, admin user details, and change descriptions."
+Future AI Integration,GSS_DC_SyRS_411200,The system shall capture and structure all data in a format that facilitates seamless integration with AI modules and other relevant applications.
+Rack metrics (Cost Comparison),GSS_DC_SyRS_411300,"The system shall enable cost comparison between racking and shelving product groups based on user inputs like capacity, pallet position, overall cost."
+Rack metrics (Cost Comparison),GSS_DC_SyRS_411301,The system shall restrict cross-comparison between incompatible product groups.
+Rack metrics (Cost Comparison),GSS_DC_SyRS_411302,The system shall generate and provide option to download the reports and it is independent of enquiries.
+ 3D Visualization,GSS_DC_SyRS_411400,"The system shall support 3D visualization of civil components, racking layouts, MHE, and SKUs."
+ 3D Visualization,GSS_DC_SyRS_411401,The system shall include textures for flooring and walls.
+ 3D Visualization,GSS_DC_SyRS_411403,The system shall export 3D views in PDF or web viewer formats.
+BOM Generation  ,GSS_DC_SyRS_411500,The system shall generate BOMs for full and partial layouts based on selected area or user-selected block.
+BOM Generation  ,GSS_DC_SyRS_411501,"The BOM shall include cost, weight, shipping volumes and assembly time estimates."
+BOM Generation  ,GSS_DC_SyRS_411502,The System shall display and allow export of assembly time and cost estimation during BOM generation.
+BOM Generation  ,GSS_DC_SyRS_411503,The BOM output shall include a column for the assembly drawing number.
+BOM Generation  ,GSS_DC_SyRS_411504,"Users shall be able to create new items in the layout or add them directly to the BOM, and both shall reflect in the BOM output."
+BOM Generation  ,GSS_DC_SyRS_411505,The BOM output shall be customizable per user role to include/exclude weight and show prices in INR or USD.
+BOM Generation  ,GSS_DC_SyRS_411506,The software shall support collapsible BOM format to show component-level BOM under each assembly.
+BOM Generation  ,GSS_DC_SyRS_411507,Users shall be able to generate BOM without creating a drawing.
+BOM Generation  ,GSS_DC_SyRS_411508,The BOM output shall be editable or non-editable based on the user’s role.
+BOM Generation  ,GSS_DC_SyRS_411509,The BOM pricing shall be linked to formulas that support discount application.
+BOM Generation  ,GSS_DC_SyRS_411510,All component linkages in the BOM shall be formula-driven for Excel exports.
+BOM Generation  ,GSS_DC_SyRS_411511,The Component BOM feature shall include all latest components available in the system.
+BOM Generation  ,GSS_DC_SyRS_411512,"The BOM output format shall be Excel or PDF based on user role, with HO users able to choose the format."
+Assembly Drawing,GSS_DC_SyRS_411600,The system shall link GA drawings to assembly manuals.
+Assembly Drawing,GSS_DC_SyRS_411601,"The system shall display component details like component name, type, price and weight via tooltips and on-click actions"
+General Functional Enhancements  ,GSS_DC_SyRS_411700,The system shall support plug-in/plug-out functionality.
+General Functional Enhancements  ,GSS_DC_SyRS_411702,The system shall support admin access to all drawings and files.
+General Functional Enhancements  ,GSS_DC_SyRS_411703,The system shall support version management of design outputs.
+General Functional Enhancements  ,GSS_DC_SyRS_411704,The system shall prevent output generation if layout errors are detected and shall alert the user with necessary correction guidance before proceeding.
+General Functional Enhancements  ,GSS_DC_SyRS_411705,"The system shall allow the admin to customize solution access by restricting components or product groups (PG) per user, with full control over what is assigned to whom."
+User help guide,GSS_DC_SyRS_411800,The software shall display contextual pop-ups and alerts to guide users during layout preparation.
+User help guide,GSS_DC_SyRS_411801,"The software shall provide tooltip help text on component hover, including name, technical details, usage, and linked components."
+User help guide,GSS_DC_SyRS_411802,The software shall generate alerts and caution messages when discrepancies are detected during layout preparation.
+User help guide,GSS_DC_SyRS_411803,The software shall display descriptive tooltip text for all UI icons to assist user navigation and understanding.
+User help guide,GSS_DC_SyRS_411804,The software shall show error pop-ups with actionable correction suggestions to help users resolve layout issues.
+User help guide,GSS_DC_SyRS_411805,The software must prevent BOM output generation if any errors are present in the configuration or design.
+"Load Chart, Master BOM and Reckoner Utility",GSS_DC_SyRS_411900,"The system shall redevelop existing Excel-based data views into an interactive web UI for improved accessibility, usability, and integration for Load Chart, Master BOM and Reckoner Utility."
+Admin Configuration Page,GSS_DC_SyRS_412000,"The System shall allow Admin users to Configure new users, configure new components, import load charts, Master BOM and manage Reckoner Utility."
+ Non- Functional Requirements,GSS_DC_SyRS_420000,The system shall provide a responsive and intuitive user interface for layout design.
+ Non- Functional Requirements,GSS_DC_SyRS_420001,The system shall ensure high performance and low latency during drag-and-drop operations.
+ Non- Functional Requirements,GSS_DC_SyRS_420002,The system shall support secure user authentication and role-based access control.
+ Non- Functional Requirements,GSS_DC_SyRS_420003,The system shall be scalable to support large warehouse layouts and multiple concurrent users.
+ Non- Functional Requirements,GSS_DC_SyRS_420004,The system shall maintain data integrity and provide regular backups of design data.
+ Non- Functional Requirements,GSS_DC_SyRS_420005,The system shall be compatible with major browsers and operating systems.
+ Non- Functional Requirements,GSS_DC_SyRS_420006,Database Choice Rationale
+ Non- Functional Requirements,GSS_DC_SyRS_420007,Read Throughput:
+ Non- Functional Requirements,GSS_DC_SyRS_420008,Write Throughput:
+ Non- Functional Requirements,GSS_DC_SyRS_420009,Storage Needs
+ Non- Functional Requirements,GSS_DC_SyRS_420010,Compute Needs
+ Non- Functional Requirements,GSS_DC_SyRS_420011,Instances Required
+ Non- Functional Requirements,GSS_DC_SyRS_420012,Number of Users
+ Non- Functional Requirements,GSS_DC_SyRS_420013,Number of Concurrent Users
+ Non- Functional Requirements,GSS_DC_SyRS_420014,Horizontal vs Vertical Scaling
+ Non- Functional Requirements,GSS_DC_SyRS_420016,DevOps Pipeline
+ Non- Functional Requirements,GSS_DC_SyRS_420017,State Management
+ Non- Functional Requirements,GSS_DC_SyRS_420018,Caching Needs
+ Non- Functional Requirements,GSS_DC_SyRS_420019,Data Encryption:
+ Non- Functional Requirements,GSS_DC_SyRS_420020,Audit Logging:
+ Non- Functional Requirements,GSS_DC_SyRS_420021,Access Control:
+ Non- Functional Requirements,GSS_DC_SyRS_420022,DDoS Protection:
+ Non- Functional Requirements,GSS_DC_SyRS_420023,Rate Limiting:
+ Non- Functional Requirements,GSS_DC_SyRS_420024,Data Privacy Compliance:
+ Non- Functional Requirements,GSS_DC_SyRS_420025,Response Time:
+ Non- Functional Requirements,GSS_DC_SyRS_420026,Scalability:
+ Non- Functional Requirements,GSS_DC_SyRS_420027,Modular Architecture:
+ Non- Functional Requirements,GSS_DC_SyRS_420028,Configuration-Driven Logic:
+ Non- Functional Requirements,GSS_DC_SyRS_420029,Reliability & Availability (Uptime):
+ Non- Functional Requirements,GSS_DC_SyRS_420030,Reliability & Availability (Failover):
+ Non- Functional Requirements,GSS_DC_SyRS_420031,Localization Support:
+ Non- Functional Requirements,GSS_DC_SyRS_420032,Automated Testing:
+ Non- Functional Requirements,GSS_DC_SyRS_420033,Test Environment:
+ Non- Functional Requirements,GSS_DC_SyRS_420034,Load Testing:
+ Non- Functional Requirements,GSS_DC_SyRS_420035,Stress Testing:
+ Non- Functional Requirements,GSS_DC_SyRS_420036,Latency Targets:
+ Non- Functional Requirements,GSS_DC_SyRS_420037,Automated Backups:
+ Non- Functional Requirements,GSS_DC_SyRS_420039,Observability (Logging):
+ Non- Functional Requirements,GSS_DC_SyRS_420040,Observability (Monitoring):
+ Non- Functional Requirements,GSS_DC_SyRS_420041,Observability (Alerting):
+ Non- Functional Requirements,GSS_DC_SyRS_420042,Observability (Tracing):
+ Non- Functional Requirements,GSS_DC_SyRS_420043,"The application version shall be displayed unobtrusively on the website, ensuring visibility without distracting from the primary content."
+ Non- Functional Requirements,GSS_DC_SyRS_440100,The configurator shall integrate with the Enquiry App to fetch customer-specific enquiry data
+ Non- Functional Requirements,GSS_DC_SyRS_440101,The integration shall support bi-directional data sync to update enquiry status based on configuration progress.
+ Non- Functional Requirements,GSS_DC_SyRS_610000,The system shall support Google Chrome version 131.0.6778.266 and above.
+ Non- Functional Requirements,GSS_DC_SyRS_610001,The system should support Microsoft Edge version 132 and above.
+ Non- Functional Requirements,GSS_DC_SyRS_620000,The system shall implement role-based authentication using traditional login mechanisms.
+ Non- Functional Requirements,GSS_DC_SyRS_620001,Defined roles shall include:
+ Non- Functional Requirements,GSS_DC_SyRS_620002,The system shall support Single Sign-On (SSO) for enterprise users.

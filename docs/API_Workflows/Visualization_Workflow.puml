@@ -1,0 +1,23 @@
+@startuml
+actor User
+participant Frontend
+participant DesignEngine
+participant Storage (S3/CDN)
+
+User -> Frontend: Request 2D View
+Frontend -> DesignEngine: POST /design/2d/render
+DesignEngine -> Storage: Check cache
+alt cached
+    Storage --> Frontend: Return cached asset URL
+else not cached
+    DesignEngine -> DesignEngine: Generate 2D asset
+    DesignEngine -> Storage: Store rendered asset (S3)
+    Storage --> Frontend: Return asset URL
+end
+
+User -> Frontend: Request 3D View
+Frontend -> DesignEngine: GET /design/3d/{configurationId}
+DesignEngine -> Storage: Return manifest & signed URLs
+Frontend -> Storage: Fetch models (glTF/GLB)
+Frontend -> Frontend: Load Three.js scene
+@enduml

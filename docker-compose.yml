@@ -1,0 +1,176 @@
+services:
+  # ============================================================================
+  # Single PostgreSQL instance with multiple databases
+  # ============================================================================
+
+  postgres:
+    image: postgres:16
+    container_name: gss_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gss-network
+
+  # ============================================================================
+  # Services (all connect to single postgres instance, different databases)
+  # ============================================================================
+
+  admin-service:
+    build:
+      context: Services/admin-service
+      dockerfile: Dockerfile
+    container_name: admin_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Database=admin_service;Username=postgres;Password=postgres;Port=5432;"
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:80
+    ports:
+      - "5001:80"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:80/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - gss-network
+
+  catalog-service:
+    build:
+      context: Services/catalog-service
+      dockerfile: Dockerfile
+    container_name: catalog_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Database=catalog_service;Username=postgres;Password=postgres;Port=5432;"
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:80
+    ports:
+      - "5002:80"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:80/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - gss-network
+
+  rule-service:
+    build:
+      context: Services/rule-service
+      dockerfile: Dockerfile
+    container_name: rule_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Database=rule_service;Username=postgres;Password=postgres;Port=5432;"
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:80
+    ports:
+      - "5004:80"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:80/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - gss-network
+
+  cad-service:
+    build:
+      context: Services/cad-service
+      dockerfile: Dockerfile
+    container_name: cad_service
+    environment:
+      APP_NAME: "DXF Metadata Extractor API"
+      APP_VERSION: "1.0.0"
+      DEBUG: "True"
+      CORS_ORIGINS: '["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174", "http://localhost:3000", "http://gss-web-api:80"]'
+    ports:
+      - "5005:8000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - gss-network
+
+
+  # GSS Web API (BFF) - Backend for Frontend
+  gss-web-api:
+    build:
+      context: ./gss-web-api
+      dockerfile: Dockerfile
+    container_name: gss_web_api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ServiceEndpoints__AdminService=http://admin-service:80
+      - ServiceEndpoints__CatalogService=http://catalog-service:80
+      - ServiceEndpoints__RuleService=http://rule-service:80
+      - ServiceEndpoints__CadService=http://cad-service:8000
+      - Authentication__Authority=http://admin-service:80
+      - Authentication__Audience=gss-web-api
+      - Authentication__ValidateIssuer=false
+      - Authentication__ValidateAudience=false
+      - Authentication__ValidateLifetime=false
+      - Cors__AllowedOrigins__0=http://localhost:3000
+      - Cors__AllowedOrigins__1=http://localhost:5173
+      - Cors__AllowedOrigins__2=http://localhost:4200
+    ports:
+      - "5003:80"
+    depends_on:
+      admin-service:
+        condition: service_started
+      catalog-service:
+        condition: service_started
+      rule-service:
+        condition: service_healthy
+      cad-service:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:80/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - gss-network
+
+  # ============================================================================
+  # Supporting Services
+  # ============================================================================
+
+  seq:
+    image: datalust/seq:2024.3
+    container_name: seq
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "8081:80"
+    networks:
+      - gss-network
+
+volumes:
+  postgres_data:
+
+
+networks:
+  gss-network:
+    driver: bridge

@@ -1,0 +1,2826 @@
+openapi: 3.0.3
+info:
+  title: GSS Web API - Backend for Frontend
+  version: 1.0.0
+  description: |
+    Backend-for-Frontend (BFF) service for Godrej Storage Solutions (GSS) warehouse configurator platform.
+    
+    This API provides intent-based endpoints designed around user journeys and frontend screens, 
+    orchestrating calls to internal microservices (admin-service, catalog-service, rule-service).
+    
+    **Key Features:**
+    - Intent-based API design (not CRUD)
+    - Real-time configuration validation
+    - BOM and quote generation
+    - 2D/3D rendering support
+    - File import/export capabilities
+    
+  contact:
+    name: GSS Support
+    email: support@gss.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:5003/api/v1
+    description: Local development
+  - url: https://api-dev.gss.com/api/v1
+    description: Development environment
+  - url: https://api.gss.com/api/v1
+    description: Production environment
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Authentication
+    description: User authentication and token management
+  - name: User Context
+    description: User authentication context and preferences
+  - name: Configurations
+    description: Warehouse configuration management
+  - name: Jobs
+    description: Asynchronous job management (BOM, quotes)
+  - name: Files
+    description: File upload and processing
+  - name: Design
+    description: 2D/3D rendering services
+  - name: Health
+    description: Service health and monitoring
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: |
+        Authenticate user with email/username and password. Returns JWT access token and refresh token.
+        
+        This endpoint proxies to the authentication service (Cognito or admin-service) and returns tokens.
+        
+        **User Journey:** 01_Login
+        
+        **Flow:**
+        1. User submits credentials
+        2. BFF validates and forwards to auth service
+        3. On success, returns JWT tokens
+        4. Frontend stores tokens securely (httpOnly cookie recommended)
+        5. MFA challenge may be required (returned in response)
+      operationId: login
+      security: []  # No auth required for login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User email or username
+                  example: dealer@example.com
+                password:
+                  type: string
+                  format: password
+                  description: User password
+                  example: SecurePassword123!
+                mfaCode:
+                  type: string
+                  description: MFA code (if MFA is enabled and this is second step)
+                  example: "123456"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - accessToken
+                  - refreshToken
+                  - expiresIn
+                  - tokenType
+                properties:
+                  accessToken:
+                    type: string
+                    description: JWT access token
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refreshToken:
+                    type: string
+                    description: Refresh token for obtaining new access tokens
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  expiresIn:
+                    type: integer
+                    description: Access token expiration time in seconds
+                    example: 3600
+                  tokenType:
+                    type: string
+                    description: Token type (always "Bearer")
+                    example: Bearer
+                  userId:
+                    type: string
+                    format: uuid
+                    description: User ID
+                  requiresMfa:
+                    type: boolean
+                    description: Whether MFA is required (if true, submit mfaCode)
+                    example: false
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                correlationId: abc-123-def
+                errorCode: AUTHENTICATION_ERROR
+                message: Invalid email or password
+                details: []
+                timestamp: "2026-01-08T04:00:00Z"
+                path: /api/v1/auth/login
+        '423':
+          description: Account locked due to too many failed attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                correlationId: abc-123-def
+                errorCode: ACCOUNT_LOCKED
+                message: Account locked due to multiple failed login attempts. Please contact support.
+                details:
+                  - field: account
+                    message: Account will be unlocked after 30 minutes or contact support
+                timestamp: "2026-01-08T04:00:00Z"
+                path: /api/v1/auth/login
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: |
+        Invalidate current session and tokens.
+        
+        **User Journey:** 01_Login (Logout flow)
+      operationId: logout
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logout successful
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # --- Administrative Management ---
+
+  /roles:
+    get:
+      tags:
+        - Roles
+      summary: Get all roles
+      operationId: getRoles
+      responses:
+        '200':
+          description: List of roles retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleResponse'
+    post:
+      tags:
+        - Roles
+      summary: Create a new role
+      operationId: createRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uuid
+
+  /roles/{id}:
+    get:
+      tags:
+        - Roles
+      summary: Get role by ID
+      operationId: getRoleById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Role details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - Roles
+      summary: Update a role
+      operationId: updateRole
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '204':
+          description: Role updated successfully
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags:
+        - Roles
+      summary: Delete a role
+      operationId: deleteRole
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: modifiedBy
+          in: query
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Role deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /roles/{id}/activate:
+    post:
+      tags:
+        - Roles
+      summary: Activate a role
+      operationId: activateRole
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Role activated successfully
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /permissions:
+    get:
+      tags:
+        - Permissions
+      summary: Get all permissions
+      operationId: getPermissions
+      parameters:
+        - name: module
+          in: query
+          schema:
+            type: string
+        - name: entityName
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of permissions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PermissionResponse'
+    post:
+      tags:
+        - Permissions
+      summary: Create a new permission
+      operationId: createPermission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePermissionRequest'
+      responses:
+        '201':
+          description: Permission created successfully
+          content:
+            application/json:
+              schema:
+                type: string
+                format: uuid
+
+  /permissions/{id}:
+    get:
+      tags:
+        - Permissions
+      summary: Get permission by ID
+      operationId: getPermissionById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Permission details retrieved successfully
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - Permissions
+      summary: Update a permission
+      operationId: updatePermission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePermissionRequest'
+      responses:
+        '204':
+          description: Permission updated successfully
+    delete:
+      tags:
+        - Permissions
+      summary: Delete a permission
+      operationId: deletePermission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: modifiedBy
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Permission deleted successfully
+
+  /permissions/{id}/activate:
+    post:
+      tags:
+        - Permissions
+      summary: Activate/Deactivate a permission
+      operationId: activatePermission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: activate
+          in: query
+          required: true
+          schema:
+            type: boolean
+        - name: modifiedBy
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Permission status updated successfully
+
+  /entities:
+    get:
+      tags:
+        - Entities
+      summary: Get all entities
+      operationId: getEntities
+      responses:
+        '200':
+          description: List of entities retrieved successfully
+    post:
+      tags:
+        - Entities
+      summary: Create a new entity
+      operationId: createEntity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEntityRequest'
+      responses:
+        '201':
+          description: Entity created successfully
+
+  /role-permissions:
+    post:
+      tags:
+        - Role Permissions
+      summary: Assign permission to role
+      operationId: assignPermission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignPermissionRequest'
+      responses:
+        '201':
+          description: Permission assigned successfully
+    delete:
+      tags:
+        - Role Permissions
+      summary: Remove permission from role
+      operationId: removePermission
+      parameters:
+        - name: roleId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: permissionId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Permission removed successfully
+
+  /role-permissions/roles/{roleId}/permissions:
+    get:
+      tags:
+        - Role Permissions
+      summary: Get permissions for a role
+      operationId: getPermissionsByRole
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of permissions for the role retrieved successfully
+
+  /role-permissions/permissions/{permissionId}/roles:
+    get:
+      tags:
+        - Role Permissions
+      summary: Get roles for a permission
+      operationId: getRolesByPermission
+      parameters:
+        - name: permissionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of roles with the permission retrieved successfully
+
+  /me/context:
+    get:
+      tags:
+        - User Context
+      summary: Get current user context
+      description: |
+        Retrieves complete user context after authentication including:
+        - User profile and permissions
+        - Dealer information (if applicable)
+        - Regional preferences (currency, language, units)
+        - Feature flags
+        
+        **User Journey:** 01_Login (Post-authentication context resolution)
+      operationId: getUserContext
+      responses:
+        '200':
+          description: User context retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserContextResponse'
+              example:
+                userId: 550e8400-e29b-41d4-a716-446655440000
+                email: dealer@example.com
+                fullName: John Dealer
+                role: DEALER
+                permissions:
+                  - configurations.create
+                  - configurations.read
+                  - bom.generate
+                dealer:
+                  dealerId: d123e456-e89b-12d3-a456-426614174000
+                  dealerCode: DLR-001
+                  companyName: ABC Warehouse Solutions
+                  territory: NORTH_INDIA
+                preferences:
+                  region: ap-south-1
+                  country: IN
+                  currency: INR
+                  language: en
+                  measurementUnit: METRIC
+                featureFlags:
+                  enable3DView: true
+                  enableRealTimeValidation: true
+                  enableBulkImport: false
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /me/preferences:
+    get:
+      tags:
+        - User Context
+      summary: Get user preferences
+      description: Retrieves user-specific preferences including regional settings
+      operationId: getUserPreferences
+      responses:
+        '200':
+          description: User preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /configurations:
+    post:
+      tags:
+        - Configurations
+      summary: Create new configuration
+      description: |
+        Create a new warehouse configuration from an enquiry or from scratch.
+        
+        **User Journey:** 02_Create_Configuration_From_Enquiry
+      operationId: createConfiguration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConfigurationRequest'
+            example:
+              enquiryId: e123e456-e89b-12d3-a456-426614174000
+              name: ABC Warehouse - Phase 1
+              description: Initial configuration for 50,000 sq ft warehouse
+              siteDetails:
+                buildingFootprint:
+                  length: 100
+                  width: 50
+                  unit: METERS
+                targetCapacity: 5000
+                country: IN
+                currency: INR
+              productGroups:
+                - PALLET_RACKING
+                - SHELVING
+      responses:
+        '201':
+          description: Configuration created successfully
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the created configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigurationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /configurations/{id}:
+    get:
+      tags:
+        - Configurations
+      summary: Get configuration by ID
+      description: |
+        Retrieve full configuration details including validation status.
+        
+        **User Journey:** 03_Update_Configuration (Load existing configuration)
+      operationId: getConfiguration
+      parameters:
+        - $ref: '#/components/parameters/ConfigurationId'
+      responses:
+        '200':
+          description: Configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigurationResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    put:
+      tags:
+        - Configurations
+      summary: Update configuration (full replacement)
+      description: |
+        Update configuration with full replacement.
+        
+        **User Journey:** 03_Update_Configuration
+      operationId: updateConfiguration
+      parameters:
+        - $ref: '#/components/parameters/ConfigurationId'
+        - name: If-Match
+          in: header
+          description: ETag for optimistic concurrency control
+          schema:
+            type: string
+          example: "version-3"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigurationResponse'
+      responses:
+        '200':
+          description: Configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigurationResponse'
+        '409':
+          description: Conflict - concurrent modification detected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /configurations/{id}/validate:
+    post:
+      tags:
+        - Configurations
+      summary: Validate configuration
+      description: |
+        Trigger comprehensive validation of configuration against business rules.
+        
+        **User Journey:** 02_Create_Configuration_From_Enquiry, 03_Update_Configuration
+      operationId: validateConfiguration
+      parameters:
+        - $ref: '#/components/parameters/ConfigurationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateConfigurationRequest'
+            example:
+              ruleCategories:
+                - SPATIAL
+                - STRUCTURAL
+                - SAFETY
+                - PRICING
+              applyAutoFixes: false
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+              example:
+                configurationId: c789e012-e34b-56d7-a890-123456789abc
+                validationTimestamp: "2026-01-07T21:30:00Z"
+                overallStatus: INVALID
+                summary:
+                  totalRulesEvaluated: 45
+                  errorCount: 2
+                  warningCount: 3
+                  suggestionCount: 5
+                results:
+                  - ruleId: r045
+                    ruleName: Minimum Aisle Width
+                    category: SAFETY
+                    severity: ERROR
+                    passed: false
+                    message: Aisle width (3.5m) below minimum safety requirement (4.0m)
+                    affectedComponents:
+                      - comp-001
+                    suggestedFix:
+                      action: ADJUST_PARAMETER
+                      parameter: aisleWidth
+                      suggestedValue: 4.0
+                      autoApplicable: true
+                autoFixesAvailable: true
+                _links:
+                  applyAutoFixes: /api/v1/configurations/c789e012-e34b-56d7-a890-123456789abc/apply-fixes
+
+  /jobs/generate-bom:
+    post:
+      tags:
+        - Jobs
+      summary: Generate Bill of Materials
+      description: |
+        Trigger asynchronous BOM generation job.
+        
+        **User Journey:** 02_Create_Configuration_From_Enquiry
+      operationId: generateBom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateBomRequest'
+            example:
+              configurationId: c789e012-e34b-56d7-a890-123456789abc
+              format: EXCEL
+              includeAlternatives: true
+      responses:
+        '202':
+          description: Job accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+              example:
+                jobId: j123e456-e89b-12d3-a456-426614174000
+                jobType: BOM_GENERATION
+                status: PENDING
+                createdAt: "2026-01-07T21:30:00Z"
+                estimatedCompletionTime: "2026-01-07T21:32:00Z"
+                _links:
+                  status: /api/v1/jobs/j123e456-e89b-12d3-a456-426614174000/status
+
+  /jobs/generate-quote:
+    post:
+      tags:
+        - Jobs
+      summary: Generate quote with pricing
+      description: |
+        Trigger quote generation with pricing rules applied.
+        
+        **User Journey:** 02_Create_Configuration_From_Enquiry
+      operationId: generateQuote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateQuoteRequest'
+      responses:
+        '202':
+          description: Job accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /jobs/{jobId}/status:
+    get:
+      tags:
+        - Jobs
+      summary: Get job status
+      description: |
+        Check job status and retrieve results when completed.
+        
+        **User Journey:** 02_Create_Configuration_From_Enquiry (Polling)
+      operationId: getJobStatus
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+              example:
+                jobId: j123e456-e89b-12d3-a456-426614174000
+                jobType: BOM_GENERATION
+                status: COMPLETED
+                progress: 100
+                createdAt: "2026-01-07T21:30:00Z"
+                completedAt: "2026-01-07T21:31:30Z"
+                result:
+                  bomId: b123e456-e89b-12d3-a456-426614174000
+                  format: EXCEL
+                  downloadUrl: https://s3.amazonaws.com/gss-documents/bom/b123e456.xlsx
+                  expiresAt: "2026-01-14T21:31:30Z"
+                  summary:
+                    totalItems: 45
+                    totalCost: 1250000.00
+                    currency: INR
+
+  /files/upload:
+    post:
+      tags:
+        - Files
+      summary: Upload file (DXF/DWG civil layout)
+      description: |
+        Upload civil layout files for parsing and import.
+        
+        **User Journey:** 04_Import_Civil_Layout
+      operationId: uploadFile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - fileType
+                - configurationId
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: DXF or DWG file
+                fileType:
+                  type: string
+                  enum: [CIVIL_LAYOUT]
+                configurationId:
+                  type: string
+                  format: uuid
+      responses:
+        '202':
+          description: File accepted for processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileId:
+                    type: string
+                    format: uuid
+                  fileName:
+                    type: string
+                  fileSize:
+                    type: integer
+                  status:
+                    type: string
+                    enum: [PROCESSING]
+                  uploadedAt:
+                    type: string
+                    format: date-time
+                  _links:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                      parsed:
+                        type: string
+        '400':
+          description: Invalid file format
+        '413':
+          description: File too large
+
+  /design/2d/render:
+    post:
+      tags:
+        - Design
+      summary: Generate 2D rendering
+      description: |
+        Generate 2D rendering of configuration.
+        
+        **User Journey:** 05_2D_View
+      operationId: render2D
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - configurationId
+              properties:
+                configurationId:
+                  type: string
+                  format: uuid
+                layers:
+                  type: array
+                  items:
+                    type: string
+                    enum: [LAYOUT, DIMENSIONS, LABELS]
+                format:
+                  type: string
+                  enum: [SVG, PNG, PDF]
+                  default: SVG
+                resolution:
+                  type: string
+                  enum: [LOW, MEDIUM, HIGH]
+                  default: HIGH
+      responses:
+        '200':
+          description: Rendering generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  renderingId:
+                    type: string
+                    format: uuid
+                  format:
+                    type: string
+                  url:
+                    type: string
+                    format: uri
+                  expiresAt:
+                    type: string
+                    format: date-time
+                  metadata:
+                    type: object
+
+  /design/3d/{configurationId}:
+    get:
+      tags:
+        - Design
+      summary: Get 3D model assets
+      description: |
+        Retrieve 3D model assets for configuration.
+        
+        **User Journey:** 06_3D_View
+      operationId: get3DModel
+      parameters:
+        - name: configurationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 3D model manifest retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configurationId:
+                    type: string
+                    format: uuid
+                  format:
+                    type: string
+                    enum: [GLTF, GLB]
+                  manifest:
+                    type: object
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Service health check endpoint (no authentication required)
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: healthy
+                timestamp: "2026-01-07T21:30:00Z"
+                service: gss-web-api
+                version: 1.0.0
+                dependencies:
+                  adminService: healthy
+                  catalogService: healthy
+                  ruleService: healthy
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication service
+
+  parameters:
+    ConfigurationId:
+      name: id
+      in: path
+      required: true
+      description: Configuration unique identifier
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - Invalid or expired token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            correlationId: abc-123-def
+            errorCode: AUTHENTICATION_ERROR
+            message: Invalid or expired JWT token
+            details: []
+            timestamp: "2026-01-07T21:30:00Z"
+            path: /api/v1/me/context
+
+    ForbiddenError:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    UserContextResponse:
+      type: object
+      required:
+        - userId
+        - email
+        - fullName
+        - role
+        - permissions
+        - preferences
+        - featureFlags
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: Unique user identifier
+        email:
+          type: string
+          format: email
+          description: User email address
+        fullName:
+          type: string
+          description: User full name
+        role:
+          type: string
+          enum: [DEALER, ADMIN, DESIGNER, VIEWER]
+          description: User role
+        permissions:
+          type: array
+          items:
+            type: string
+          description: List of permissions
+        dealer:
+          $ref: '#/components/schemas/DealerInfo'
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+        featureFlags:
+          $ref: '#/components/schemas/FeatureFlags'
+
+    DealerInfo:
+      type: object
+      properties:
+        dealerId:
+          type: string
+          format: uuid
+        dealerCode:
+          type: string
+        companyName:
+          type: string
+        territory:
+          type: string
+
+    UserPreferences:
+      type: object
+      properties:
+        region:
+          type: string
+          example: ap-south-1
+        country:
+          type: string
+          example: IN
+        currency:
+          type: string
+          example: INR
+        language:
+          type: string
+          example: en
+        measurementUnit:
+          type: string
+          enum: [METRIC, IMPERIAL]
+
+    FeatureFlags:
+      type: object
+      properties:
+        enable3DView:
+          type: boolean
+        enableRealTimeValidation:
+          type: boolean
+        enableBulkImport:
+          type: boolean
+
+    CreateConfigurationRequest:
+      type: object
+      required:
+        - name
+        - siteDetails
+        - productGroups
+      properties:
+        enquiryId:
+          type: string
+          format: uuid
+          description: Optional enquiry ID
+        name:
+          type: string
+          description: Configuration name
+        description:
+          type: string
+          description: Configuration description
+        siteDetails:
+          $ref: '#/components/schemas/SiteDetails'
+        productGroups:
+          type: array
+          items:
+            type: string
+            enum: [PALLET_RACKING, SHELVING, MEZZANINE]
+        initialLayout:
+          type: object
+          nullable: true
+
+    SiteDetails:
+      type: object
+      required:
+        - buildingFootprint
+        - targetCapacity
+        - country
+        - currency
+      properties:
+        buildingFootprint:
+          $ref: '#/components/schemas/BuildingFootprint'
+        targetCapacity:
+          type: integer
+          description: Target storage capacity
+        country:
+          type: string
+        currency:
+          type: string
+
+    BuildingFootprint:
+      type: object
+      required:
+        - length
+        - width
+        - unit
+      properties:
+        length:
+          type: number
+          format: decimal
+        width:
+          type: number
+          format: decimal
+        unit:
+          type: string
+          enum: [METERS, FEET]
+
+    ConfigurationResponse:
+      type: object
+      properties:
+        configurationId:
+          type: string
+          format: uuid
+        sessionId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, IN_PROGRESS, COMPLETED, ARCHIVED]
+        version:
+          type: integer
+        siteDetails:
+          $ref: '#/components/schemas/SiteDetails'
+        configurationData:
+          type: object
+        validationStatus:
+          $ref: '#/components/schemas/ValidationStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+        _links:
+          type: object
+          additionalProperties:
+            type: string
+
+    ValidationStatus:
+      type: object
+      properties:
+        isValid:
+          type: boolean
+        lastValidatedAt:
+          type: string
+          format: date-time
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationResult'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationResult'
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationResult'
+
+    ValidationResult:
+      type: object
+      properties:
+        ruleId:
+          type: string
+        ruleName:
+          type: string
+        category:
+          type: string
+          enum: [SPATIAL, STRUCTURAL, SAFETY, PRICING]
+        severity:
+          type: string
+          enum: [ERROR, WARNING, INFO]
+        passed:
+          type: boolean
+        message:
+          type: string
+        affectedComponents:
+          type: array
+          items:
+            type: string
+        suggestedFix:
+          $ref: '#/components/schemas/SuggestedFix'
+
+    SuggestedFix:
+      type: object
+      properties:
+        action:
+          type: string
+        parameter:
+          type: string
+        suggestedValue:
+          type: object
+        autoApplicable:
+          type: boolean
+
+    ValidateConfigurationRequest:
+      type: object
+      properties:
+        ruleCategories:
+          type: array
+          items:
+            type: string
+            enum: [SPATIAL, STRUCTURAL, SAFETY, PRICING]
+        applyAutoFixes:
+          type: boolean
+          default: false
+
+    ValidationResponse:
+      type: object
+      properties:
+        configurationId:
+          type: string
+          format: uuid
+        validationTimestamp:
+          type: string
+          format: date-time
+        overallStatus:
+          type: string
+          enum: [VALID, INVALID, WARNING]
+        summary:
+          $ref: '#/components/schemas/ValidationSummary'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationResult'
+        autoFixesAvailable:
+          type: boolean
+        _links:
+          type: object
+
+    ValidationSummary:
+      type: object
+      properties:
+        totalRulesEvaluated:
+          type: integer
+        errorCount:
+          type: integer
+        warningCount:
+          type: integer
+        suggestionCount:
+          type: integer
+
+    GenerateBomRequest:
+      type: object
+      required:
+        - configurationId
+      properties:
+        configurationId:
+          type: string
+          format: uuid
+        format:
+          type: string
+          enum: [EXCEL, CSV, PDF]
+          default: EXCEL
+        includeAlternatives:
+          type: boolean
+          default: false
+
+    GenerateQuoteRequest:
+      type: object
+      required:
+        - configurationId
+      properties:
+        configurationId:
+          type: string
+          format: uuid
+        pricingRules:
+          type: array
+          items:
+            type: string
+            enum: [DEALER_DISCOUNT, VOLUME_DISCOUNT, SEASONAL_DISCOUNT]
+        currency:
+          type: string
+          default: INR
+        validityDays:
+          type: integer
+          default: 30
+
+    JobResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        jobType:
+          type: string
+          enum: [BOM_GENERATION, QUOTE_GENERATION, FILE_PROCESSING]
+        status:
+          type: string
+          enum: [PENDING, RUNNING, COMPLETED, FAILED]
+        createdAt:
+          type: string
+          format: date-time
+        estimatedCompletionTime:
+          type: string
+          format: date-time
+        _links:
+          type: object
+
+    JobStatusResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        jobType:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, RUNNING, COMPLETED, FAILED]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        result:
+          $ref: '#/components/schemas/JobResult'
+        errors:
+          type: array
+          items:
+            type: string
+
+    JobResult:
+      type: object
+      properties:
+        resultId:
+          type: string
+          format: uuid
+        format:
+          type: string
+        downloadUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        summary:
+          type: object
+
+    ErrorResponse:
+      type: object
+      required:
+        - correlationId
+        - errorCode
+        - message
+        - timestamp
+        - path
+      properties:
+        correlationId:
+          type: string
+          description: Correlation ID for distributed tracing
+        errorCode:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+            - AUTHENTICATION_ERROR
+            - AUTHORIZATION_ERROR
+            - NOT_FOUND
+            - CONFLICT
+            - SERVICE_UNAVAILABLE
+            - INTERNAL_ERROR
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+          description: Request path that caused the error
+
+    ErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+          description: Field name (for validation errors)
+        message:
+          type: string
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        service:
+          type: string
+        version:
+          type: string
+        dependencies:
+          type: object
+          additionalProperties:
+            type: string
+openapi: 3.0.3
+info:
+  title: GSS Web API - Backend for Frontend
+  version: 1.0.0
+  description: |
+    Backend-for-Frontend (BFF) service for Godrej Storage Solutions (GSS) warehouse configurator platform.
+    
+    This API provides intent-based endpoints designed around user journeys and frontend screens, 
+    orchestrating calls to internal microservices (admin-service, catalog-service, rule-service).
+    
+    **Key Features:**
+    - Intent-based API design (not CRUD)
+    - Real-time configuration validation
+    - BOM and quote generation
+    - 2D/3D rendering support
+    - File import/export capabilities
+    
+  contact:
+    name: GSS Support
+    email: support@gss.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:5003/api/v1
+    description: Local development
+  - url: https://api-dev.gss.com/api/v1
+    description: Development environment
+  - url: https://api.gss.com/api/v1
+    description: Production environment
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Authentication
+    description: User authentication and token management
+  - name: User Context
+    description: User authentication context and preferences
+  - name: Configurations
+    description: Warehouse configuration management
+  - name: Jobs
+    description: Asynchronous job management (BOM, quotes)
+  - name: Files
+    description: File upload and processing
+  - name: Design
+    description: 2D/3D rendering services
+  - name: Health
+    description: Service health and monitoring
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: |
+        Authenticate user with email/username and password. Returns JWT access token and refresh token.
+        
+        This endpoint proxies to the authentication service (Cognito or admin-service) and returns tokens.
+        
+        **User Journey:** 01_Login
+        
+        **Flow:**
+        1. User submits credentials
+        2. BFF validates and forwards to auth service
+        3. On success, returns JWT tokens
+        4. Frontend stores tokens securely (httpOnly cookie recommended)
+        5. MFA challenge may be required (returned in response)
+      operationId: login
+      security: []  # No auth required for login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User email or username
+                  example: dealer@example.com
+                password:
+                  type: string
+                  format: password
+                  description: User password
+                  example: SecurePassword123!
+                mfaCode:
+                  type: string
+                  description: MFA code (if MFA is enabled and this is second step)
+                  example: "123456"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - accessToken
+                  - refreshToken
+                  - expiresIn
+                  - tokenType
+                properties:
+                  accessToken:
+                    type: string
+                    description: JWT access token
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refreshToken:
+                    type: string
+                    description: Refresh token for obtaining new access tokens
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  expiresIn:
+                    type: integer
+                    description: Access token expiration time in seconds
+                    example: 3600
+                  tokenType:
+                    type: string
+                    description: Token type (always "Bearer")
+                    example: Bearer
+                  userId:
+                    type: string
+                    format: uuid
+                    description: User ID
+                  requiresMfa:
+                    type: boolean
+                    description: Whether MFA is required (if true, submit mfaCode)
+                    example: false
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                correlationId: abc-123-def
+                errorCode: AUTHENTICATION_ERROR
+                message: Invalid email or password
+                details: []
+                timestamp: "2026-01-08T04:00:00Z"
+                path: /api/v1/auth/login
+        '423':
+          description: Account locked due to too many failed attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                correlationId: abc-123-def
+                errorCode: ACCOUNT_LOCKED
+                message: Account locked due to multiple failed login attempts. Please contact support.
+                details:
+                  - field: account
+                    message: Account will be unlocked after 30 minutes or contact support
+                timestamp: "2026-01-08T04:00:00Z"
+                path: /api/v1/auth/login
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: |
+        Obtain a new access token using a refresh token.
+        
+        **User Journey:** 01_Login (Token refresh flow)
+      operationId: refreshToken
+      security: []  # No auth required, uses refresh token in body
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  description: Valid refresh token
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                  expiresIn:
+                    type: integer
+                  tokenType:
+                    type: string
+                    example: Bearer
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: |
+        Invalidate current session and tokens.
+        
+        **User Journey:** 01_Login (Logout flow)
+      operationId: logout
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logout successful
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /me/context:
+    get:
+      tags:
+        - User Context
+      summary: Get current user context
+      description: |
+        Retrieves complete user context after authentication including:
+        - User profile and permissions
+        - Dealer information (if applicable)
+        - Regional preferences (currency, language, units)
+        - Feature flags
+        
+        **User Journey:** 01_Login (Post-authentication context resolution)
+      operationId: getUserContext
+      responses:
+        '200':
+          description: User context retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserContextResponse'
+              example:
+                userId: 550e8400-e29b-41d4-a716-446655440000
+                email: dealer@example.com
+                fullName: John Dealer
+                role: DEALER
+                permissions:
+                  - configurations.create
+                  - configurations.read
+                  - bom.generate
+                dealer:
+                  dealerId: d123e456-e89b-12d3-a456-426614174000
+                  dealerCode: DLR-001
+                  companyName: ABC Warehouse Solutions
+                  territory: NORTH_INDIA
+                preferences:
+                  region: ap-south-1
+                  country: IN
+                  currency: INR
+                  language: en
+                  measurementUnit: METRIC
+                featureFlags:
+                  enable3DView: true
+                  enableRealTimeValidation: true
+                  enableBulkImport: false
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /me/preferences:
+    get:
+      tags:
+        - User Context
+      summary: Get user preferences
+      description: Retrieves user-specific preferences including regional settings
+      operationId: getUserPreferences
+      responses:
+        '200':
+          description: User preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPreferences'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /configurations:
+    post:
+      tags:
+        - Configurations
+      summary: Create new configuration
+      description: |
+        Create a new warehouse configuration from an enquiry or from scratch.
+        
+        **User Journey:** 02_Create_Configuration_From_Enquiry
+      operationId: createConfiguration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConfigurationRequest'
+            example:
+              enquiryId: e123e456-e89b-12d3-a456-426614174000
+              name: ABC Warehouse - Phase 1
+              description: Initial configuration for 50,000 sq ft warehouse
+              siteDetails:
+                buildingFootprint:
+                  length: 100
+                  width: 50
+                  unit: METERS
+                targetCapacity: 5000
+                country: IN
+                currency: INR
+              productGroups:
+                - PALLET_RACKING
+                - SHELVING
+      responses:
+        '201':
+          description: Configuration created successfully
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the created configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigurationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /configurations/{id}:
+    get:
+      tags:
+        - Configurations
+      summary: Get configuration by ID
+      description: |
+        Retrieve full configuration details including validation status.
+        
+        **User Journey:** 03_Update_Configuration (Load existing configuration)
+      operationId: getConfiguration
+      parameters:
+        - $ref: '#/components/parameters/ConfigurationId'
+      responses:
+        '200':
+          description: Configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigurationResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    put:
+      tags:
+        - Configurations
+      summary: Update configuration (full replacement)
+      description: |
+        Update configuration with full replacement.
+        
+        **User Journey:** 03_Update_Configuration
+      operationId: updateConfiguration
+      parameters:
+        - $ref: '#/components/parameters/ConfigurationId'
+        - name: If-Match
+          in: header
+          description: ETag for optimistic concurrency control
+          schema:
+            type: string
+          example: "version-3"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigurationResponse'
+      responses:
+        '200':
+          description: Configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigurationResponse'
+        '409':
+          description: Conflict - concurrent modification detected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /configurations/{id}/validate:
+    post:
+      tags:
+        - Configurations
+      summary: Validate configuration
+      description: |
+        Trigger comprehensive validation of configuration against business rules.
+        
+        **User Journey:** 02_Create_Configuration_From_Enquiry, 03_Update_Configuration
+      operationId: validateConfiguration
+      parameters:
+        - $ref: '#/components/parameters/ConfigurationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateConfigurationRequest'
+            example:
+              ruleCategories:
+                - SPATIAL
+                - STRUCTURAL
+                - SAFETY
+                - PRICING
+              applyAutoFixes: false
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+              example:
+                configurationId: c789e012-e34b-56d7-a890-123456789abc
+                validationTimestamp: "2026-01-07T21:30:00Z"
+                overallStatus: INVALID
+                summary:
+                  totalRulesEvaluated: 45
+                  errorCount: 2
+                  warningCount: 3
+                  suggestionCount: 5
+                results:
+                  - ruleId: r045
+                    ruleName: Minimum Aisle Width
+                    category: SAFETY
+                    severity: ERROR
+                    passed: false
+                    message: Aisle width (3.5m) below minimum safety requirement (4.0m)
+                    affectedComponents:
+                      - comp-001
+                    suggestedFix:
+                      action: ADJUST_PARAMETER
+                      parameter: aisleWidth
+                      suggestedValue: 4.0
+                      autoApplicable: true
+                autoFixesAvailable: true
+                _links:
+                  applyAutoFixes: /api/v1/configurations/c789e012-e34b-56d7-a890-123456789abc/apply-fixes
+
+  /jobs/generate-bom:
+    post:
+      tags:
+        - Jobs
+      summary: Generate Bill of Materials
+      description: |
+        Trigger asynchronous BOM generation job.
+        
+        **User Journey:** 02_Create_Configuration_From_Enquiry
+      operationId: generateBom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateBomRequest'
+            example:
+              configurationId: c789e012-e34b-56d7-a890-123456789abc
+              format: EXCEL
+              includeAlternatives: true
+      responses:
+        '202':
+          description: Job accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+              example:
+                jobId: j123e456-e89b-12d3-a456-426614174000
+                jobType: BOM_GENERATION
+                status: PENDING
+                createdAt: "2026-01-07T21:30:00Z"
+                estimatedCompletionTime: "2026-01-07T21:32:00Z"
+                _links:
+                  status: /api/v1/jobs/j123e456-e89b-12d3-a456-426614174000/status
+
+  /jobs/generate-quote:
+    post:
+      tags:
+        - Jobs
+      summary: Generate quote with pricing
+      description: |
+        Trigger quote generation with pricing rules applied.
+        
+        **User Journey:** 02_Create_Configuration_From_Enquiry
+      operationId: generateQuote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateQuoteRequest'
+      responses:
+        '202':
+          description: Job accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /jobs/{jobId}/status:
+    get:
+      tags:
+        - Jobs
+      summary: Get job status
+      description: |
+        Check job status and retrieve results when completed.
+        
+        **User Journey:** 02_Create_Configuration_From_Enquiry (Polling)
+      operationId: getJobStatus
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatusResponse'
+              example:
+                jobId: j123e456-e89b-12d3-a456-426614174000
+                jobType: BOM_GENERATION
+                status: COMPLETED
+                progress: 100
+                createdAt: "2026-01-07T21:30:00Z"
+                completedAt: "2026-01-07T21:31:30Z"
+                result:
+                  bomId: b123e456-e89b-12d3-a456-426614174000
+                  format: EXCEL
+                  downloadUrl: https://s3.amazonaws.com/gss-documents/bom/b123e456.xlsx
+                  expiresAt: "2026-01-14T21:31:30Z"
+                  summary:
+                    totalItems: 45
+                    totalCost: 1250000.00
+                    currency: INR
+
+  /files/upload:
+    post:
+      tags:
+        - Files
+      summary: Upload file (DXF/DWG civil layout)
+      description: |
+        Upload civil layout files for parsing and import.
+        
+        **User Journey:** 04_Import_Civil_Layout
+      operationId: uploadFile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - fileType
+                - configurationId
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: DXF or DWG file
+                fileType:
+                  type: string
+                  enum: [CIVIL_LAYOUT]
+                configurationId:
+                  type: string
+                  format: uuid
+      responses:
+        '202':
+          description: File accepted for processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileId:
+                    type: string
+                    format: uuid
+                  fileName:
+                    type: string
+                  fileSize:
+                    type: integer
+                  status:
+                    type: string
+                    enum: [PROCESSING]
+                  uploadedAt:
+                    type: string
+                    format: date-time
+                  _links:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                      parsed:
+                        type: string
+        '400':
+          description: Invalid file format
+        '413':
+          description: File too large
+
+  /design/2d/render:
+    post:
+      tags:
+        - Design
+      summary: Generate 2D rendering
+      description: |
+        Generate 2D rendering of configuration.
+        
+        **User Journey:** 05_2D_View
+      operationId: render2D
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - configurationId
+              properties:
+                configurationId:
+                  type: string
+                  format: uuid
+                layers:
+                  type: array
+                  items:
+                    type: string
+                    enum: [LAYOUT, DIMENSIONS, LABELS]
+                format:
+                  type: string
+                  enum: [SVG, PNG, PDF]
+                  default: SVG
+                resolution:
+                  type: string
+                  enum: [LOW, MEDIUM, HIGH]
+                  default: HIGH
+      responses:
+        '200':
+          description: Rendering generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  renderingId:
+                    type: string
+                    format: uuid
+                  format:
+                    type: string
+                  url:
+                    type: string
+                    format: uri
+                  expiresAt:
+                    type: string
+                    format: date-time
+                  metadata:
+                    type: object
+
+  /design/3d/{configurationId}:
+    get:
+      tags:
+        - Design
+      summary: Get 3D model assets
+      description: |
+        Retrieve 3D model assets for configuration.
+        
+        **User Journey:** 06_3D_View
+      operationId: get3DModel
+      parameters:
+        - name: configurationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 3D model manifest retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configurationId:
+                    type: string
+                    format: uuid
+                  format:
+                    type: string
+                    enum: [GLTF, GLB]
+                  manifest:
+                    type: object
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Service health check endpoint (no authentication required)
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: healthy
+                timestamp: "2026-01-07T21:30:00Z"
+                service: gss-web-api
+                version: 1.0.0
+                dependencies:
+                  adminService: healthy
+                  catalogService: healthy
+                  ruleService: healthy
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication service
+
+  parameters:
+    ConfigurationId:
+      name: id
+      in: path
+      required: true
+      description: Configuration unique identifier
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - Invalid or expired token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            correlationId: abc-123-def
+            errorCode: AUTHENTICATION_ERROR
+            message: Invalid or expired JWT token
+            details: []
+            timestamp: "2026-01-07T21:30:00Z"
+            path: /api/v1/me/context
+
+    ForbiddenError:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    UserContextResponse:
+      type: object
+      required:
+        - userId
+        - email
+        - fullName
+        - role
+        - permissions
+        - preferences
+        - featureFlags
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: Unique user identifier
+        email:
+          type: string
+          format: email
+          description: User email address
+        fullName:
+          type: string
+          description: User full name
+        role:
+          type: string
+          enum: [DEALER, ADMIN, DESIGNER, VIEWER]
+          description: User role
+        permissions:
+          type: array
+          items:
+            type: string
+          description: List of permissions
+        dealer:
+          $ref: '#/components/schemas/DealerInfo'
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+        featureFlags:
+          $ref: '#/components/schemas/FeatureFlags'
+
+    DealerInfo:
+      type: object
+      properties:
+        dealerId:
+          type: string
+          format: uuid
+        dealerCode:
+          type: string
+        companyName:
+          type: string
+        territory:
+          type: string
+
+    UserPreferences:
+      type: object
+      properties:
+        region:
+          type: string
+          example: ap-south-1
+        country:
+          type: string
+          example: IN
+        currency:
+          type: string
+          example: INR
+        language:
+          type: string
+          example: en
+        measurementUnit:
+          type: string
+          enum: [METRIC, IMPERIAL]
+
+    FeatureFlags:
+      type: object
+      properties:
+        enable3DView:
+          type: boolean
+        enableRealTimeValidation:
+          type: boolean
+        enableBulkImport:
+          type: boolean
+
+    CreateConfigurationRequest:
+      type: object
+      required:
+        - name
+        - siteDetails
+        - productGroups
+      properties:
+        enquiryId:
+          type: string
+          format: uuid
+          description: Optional enquiry ID
+        name:
+          type: string
+          description: Configuration name
+        description:
+          type: string
+          description: Configuration description
+        siteDetails:
+          $ref: '#/components/schemas/SiteDetails'
+        productGroups:
+          type: array
+          items:
+            type: string
+            enum: [PALLET_RACKING, SHELVING, MEZZANINE]
+        initialLayout:
+          type: object
+          nullable: true
+
+    SiteDetails:
+      type: object
+      required:
+        - buildingFootprint
+        - targetCapacity
+        - country
+        - currency
+      properties:
+        buildingFootprint:
+          $ref: '#/components/schemas/BuildingFootprint'
+        targetCapacity:
+          type: integer
+          description: Target storage capacity
+        country:
+          type: string
+        currency:
+          type: string
+
+    BuildingFootprint:
+      type: object
+      required:
+        - length
+        - width
+        - unit
+      properties:
+        length:
+          type: number
+          format: decimal
+        width:
+          type: number
+          format: decimal
+        unit:
+          type: string
+          enum: [METERS, FEET]
+
+    ConfigurationResponse:
+      type: object
+      properties:
+        configurationId:
+          type: string
+          format: uuid
+        sessionId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, IN_PROGRESS, COMPLETED, ARCHIVED]
+        version:
+          type: integer
+        siteDetails:
+          $ref: '#/components/schemas/SiteDetails'
+        configurationData:
+          type: object
+        validationStatus:
+          $ref: '#/components/schemas/ValidationStatus'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+        _links:
+          type: object
+          additionalProperties:
+            type: string
+
+    ValidationStatus:
+      type: object
+      properties:
+        isValid:
+          type: boolean
+        lastValidatedAt:
+          type: string
+          format: date-time
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationResult'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationResult'
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationResult'
+
+    ValidationResult:
+      type: object
+      properties:
+        ruleId:
+          type: string
+        ruleName:
+          type: string
+        category:
+          type: string
+          enum: [SPATIAL, STRUCTURAL, SAFETY, PRICING]
+        severity:
+          type: string
+          enum: [ERROR, WARNING, INFO]
+        passed:
+          type: boolean
+        message:
+          type: string
+        affectedComponents:
+          type: array
+          items:
+            type: string
+        suggestedFix:
+          $ref: '#/components/schemas/SuggestedFix'
+
+    SuggestedFix:
+      type: object
+      properties:
+        action:
+          type: string
+        parameter:
+          type: string
+        suggestedValue:
+          type: object
+        autoApplicable:
+          type: boolean
+
+    ValidateConfigurationRequest:
+      type: object
+      properties:
+        ruleCategories:
+          type: array
+          items:
+            type: string
+            enum: [SPATIAL, STRUCTURAL, SAFETY, PRICING]
+        applyAutoFixes:
+          type: boolean
+          default: false
+
+    ValidationResponse:
+      type: object
+      properties:
+        configurationId:
+          type: string
+          format: uuid
+        validationTimestamp:
+          type: string
+          format: date-time
+        overallStatus:
+          type: string
+          enum: [VALID, INVALID, WARNING]
+        summary:
+          $ref: '#/components/schemas/ValidationSummary'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationResult'
+        autoFixesAvailable:
+          type: boolean
+        _links:
+          type: object
+
+    ValidationSummary:
+      type: object
+      properties:
+        totalRulesEvaluated:
+          type: integer
+        errorCount:
+          type: integer
+        warningCount:
+          type: integer
+        suggestionCount:
+          type: integer
+
+    GenerateBomRequest:
+      type: object
+      required:
+        - configurationId
+      properties:
+        configurationId:
+          type: string
+          format: uuid
+        format:
+          type: string
+          enum: [EXCEL, CSV, PDF]
+          default: EXCEL
+        includeAlternatives:
+          type: boolean
+          default: false
+
+    GenerateQuoteRequest:
+      type: object
+      required:
+        - configurationId
+      properties:
+        configurationId:
+          type: string
+          format: uuid
+        pricingRules:
+          type: array
+          items:
+            type: string
+            enum: [DEALER_DISCOUNT, VOLUME_DISCOUNT, SEASONAL_DISCOUNT]
+        currency:
+          type: string
+          default: INR
+        validityDays:
+          type: integer
+          default: 30
+
+    JobResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        jobType:
+          type: string
+          enum: [BOM_GENERATION, QUOTE_GENERATION, FILE_PROCESSING]
+        status:
+          type: string
+          enum: [PENDING, RUNNING, COMPLETED, FAILED]
+        createdAt:
+          type: string
+          format: date-time
+        estimatedCompletionTime:
+          type: string
+          format: date-time
+        _links:
+          type: object
+
+    JobStatusResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        jobType:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, RUNNING, COMPLETED, FAILED]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        result:
+          $ref: '#/components/schemas/JobResult'
+        errors:
+          type: array
+          items:
+            type: string
+
+    JobResult:
+      type: object
+      properties:
+        resultId:
+          type: string
+          format: uuid
+        format:
+          type: string
+        downloadUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        summary:
+          type: object
+
+    ErrorResponse:
+      type: object
+      required:
+        - correlationId
+        - errorCode
+        - message
+        - timestamp
+        - path
+      properties:
+        correlationId:
+          type: string
+          description: Correlation ID for distributed tracing
+        errorCode:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+            - AUTHENTICATION_ERROR
+            - AUTHORIZATION_ERROR
+            - NOT_FOUND
+            - CONFLICT
+            - SERVICE_UNAVAILABLE
+            - INTERNAL_ERROR
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+          description: Request path that caused the error
+
+    ErrorDetail:
+      type: object
+      properties:
+        field:
+          type: string
+          description: Field name (for validation errors)
+        message:
+          type: string
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        service:
+          type: string
+        version:
+          type: string
+        dependencies:
+          type: object
+          additionalProperties:
+            type: string

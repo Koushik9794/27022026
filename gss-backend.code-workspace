@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../../Downloads/GSSDesingConfigurator 1/GSSDesingConfigurator/shared-libs"
+		},
+		{
+			"path": "../../../Downloads/GSSDesingConfigurator 1/GSSDesingConfigurator/package"
+		},
+		{
+			"path": "../../../Downloads/GSSDesingConfigurator 1/GSSDesingConfigurator/Services"
+		}
+	],
+	"settings": {}
+}
