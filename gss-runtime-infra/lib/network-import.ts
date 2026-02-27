@@ -50,8 +50,12 @@ const SUBNET_DB_1B = 'subnet-db-1b';           // ← replace with real subnet I
 
 // Existing RDS Security Group — import only, do NOT create a new one.
 // Find it: AWS Console → VPC → Security Groups → filter by vpc-0146f76f9e738f1e3f
-//          or: aws ec2 describe-security-groups --filters Name=vpc-id,Values=vpc-0146f76f9e738f1e3f
-const RDS_SG_ID = 'sg-rds-existing';           // ← replace with real RDS SG ID (sg-xxxxxxxx)
+//          or: aws rds describe-db-instances --query "DBInstances[*].VpcSecurityGroups"
+//
+// ⚠️  Replace with the real RDS security group ID before deploying.
+//     Must start with "sg-" — CDK validates the prefix at synth time.
+const RDS_SG_ID = 'sg-00000000000000000';   // ← replace with real sg-xxxxxxxxxxxxxxx
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 
