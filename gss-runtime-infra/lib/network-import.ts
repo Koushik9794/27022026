@@ -3,109 +3,210 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NetworkImport
+// NetworkStack — Static VPC Import + Security Groups
 //
-// Imports the EXISTING enterprise VPC and subnets from the runtime account.
-// Nothing here is created — CDK only generates L1 lookup references.
+// What this stack does:
+//   1. Imports existing enterprise VPC (no API calls — static IDs only)
+//   2. Imports existing subnets by known IDs (no API calls)
+//   3. Imports existing RDS Security Group (no new SG created)
+//   4. Creates ALB Security Group
+//   5. Creates ECS Security Group (egress scoped to imported RDS SG)
 //
-// VPC layout (existing):
-//   VPC ID : vpc-0146f76f9e738f1e3f
-//   Public  (ALB)    : 172.19.142.128/28  172.19.143.128/28
-//   Private (ECS)    : 172.19.142.0/25    172.19.143.0/25
-//   Private (DB)     : 172.19.144.0/28    172.19.144.16/28
+// What this stack does NOT do:
+//   ✗ Does NOT create a VPC
+//   ✗ Does NOT create subnets
+//   ✗ Does NOT create NAT gateways
+//   ✗ Does NOT create an RDS security group
+//   ✗ Does NOT call any AWS APIs during cdk synth
+//
+// Control Tower compliance:
+//   • No new networking resources created beyond ALB SG + ECS SG
+//   • All created SGs use allowAllOutbound: false (scoped egress)
+//   • No explicit securityGroupName (avoids CT naming guardrail)
+//   • Vpc.fromVpcAttributes = zero EC2 API calls at synth time
+//   • Works in cross-account CodeBuild without runtime account credentials
+//
+// ⚠️  REPLACE all placeholder IDs below with real values.
+//     AWS Console → VPC → Subnets → filter by vpc-0146f76f9e738f1e3f
+//     AWS Console → VPC → Security Groups → find the RDS SG
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface NetworkImportProps extends cdk.StackProps {
+// ── Known static network IDs ──────────────────────────────────────────────────
+const VPC_ID = 'vpc-0146f76f9e738f1e3f';
+const AZ_1A = 'ap-south-1a';
+const AZ_1B = 'ap-south-1b';
+
+// Public subnets — ALB only (172.19.142.128/28 & 172.19.143.128/28)
+const SUBNET_PUBLIC_1A = 'subnet-public-1a';   // ← replace with real subnet ID
+const SUBNET_PUBLIC_1B = 'subnet-public-1b';   // ← replace with real subnet ID
+
+// Private App subnets — ECS Fargate tasks (172.19.142.0/25 & 172.19.143.0/25)
+const SUBNET_APP_1A = 'subnet-app-1a';         // ← replace with real subnet ID
+const SUBNET_APP_1B = 'subnet-app-1b';         // ← replace with real subnet ID
+
+// Private DB subnets — referenced in VPC attributes only (not used for egress rules)
+const SUBNET_DB_1A = 'subnet-db-1a';           // ← replace with real subnet ID
+const SUBNET_DB_1B = 'subnet-db-1b';           // ← replace with real subnet ID
+
+// Existing RDS Security Group — import only, do NOT create a new one.
+// Find it: AWS Console → VPC → Security Groups → filter by vpc-0146f76f9e738f1e3f
+//          or: aws ec2 describe-security-groups --filters Name=vpc-id,Values=vpc-0146f76f9e738f1e3f
+const RDS_SG_ID = 'sg-rds-existing';           // ← replace with real RDS SG ID (sg-xxxxxxxx)
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface NetworkStackProps extends cdk.StackProps {
     readonly tags: Record<string, string>;
 }
 
 export class NetworkImportStack extends cdk.Stack {
 
-    /** The imported VPC — use this to attach SGs, ALB, ECS. */
+    /** Imported enterprise VPC — all constructs attach here */
     public readonly vpc: ec2.IVpc;
 
-    /** Two public subnets for the ALB (172.19.142.128/28 & 172.19.143.128/28). */
+    /** Public subnets — ALB placement only */
     public readonly publicSubnets: ec2.ISubnet[];
 
-    /** Two private subnets for ECS Fargate tasks (172.19.142.0/25 & 172.19.143.0/25). */
+    /** Private app subnets — ECS Fargate tasks (assignPublicIp: false) */
     public readonly privateAppSubnets: ec2.ISubnet[];
 
-    constructor(scope: Construct, id: string, props: NetworkImportProps) {
+    /** ALB Security Group — HTTP/HTTPS inbound, scoped egress to ECS only */
+    public readonly albSecurityGroup: ec2.SecurityGroup;
+
+    /** ECS Security Group — inbound from ALB only, scoped egress to RDS SG + AWS services */
+    public readonly ecsSecurityGroup: ec2.SecurityGroup;
+
+    /** IMPORTED existing RDS Security Group — not created by CDK */
+    public readonly rdsSecurityGroup: ec2.ISecurityGroup;
+
+    constructor(scope: Construct, id: string, props: NetworkStackProps) {
         super(scope, id, props);
 
-        // ── Import VPC by ID ──────────────────────────────────────────────────────
-        // fromLookup performs a live AWS describe-vpcs call during `cdk synth`.
-        // The result is cached in cdk.context.json — commit that file to SCM.
-        this.vpc = ec2.Vpc.fromLookup(this, 'EnterpriseVpc', {
-            vpcId: 'vpc-0146f76f9e738f1e3f',
+        // ── Static VPC Import ─────────────────────────────────────────────────────
+        // Vpc.fromVpcAttributes generates pure CloudFormation literal references.
+        // Zero EC2 API calls — works in cross-account CodeBuild pipelines.
+        this.vpc = ec2.Vpc.fromVpcAttributes(this, 'EnterpriseVpc', {
+            vpcId: VPC_ID,
+            availabilityZones: [AZ_1A, AZ_1B],
+            publicSubnetIds: [SUBNET_PUBLIC_1A, SUBNET_PUBLIC_1B],
+            privateSubnetIds: [SUBNET_APP_1A, SUBNET_APP_1B],
+            isolatedSubnetIds: [SUBNET_DB_1A, SUBNET_DB_1B],
         });
 
-        // ── Import Public Subnets (ALB) ───────────────────────────────────────────
-        // CDK does not support CIDR-based subnet import directly; we use fromSubnetId
-        // with availability zone info looked up at synth time.
-        // Alternative: fromLookup on the VPC and filter subnets by CIDR in code.
+        // ── Static Subnet References ──────────────────────────────────────────────
+        // fromSubnetId = no DescribeSubnets call — fully static reference.
+        this.publicSubnets = [
+            ec2.Subnet.fromSubnetId(this, 'PublicSubnet1a', SUBNET_PUBLIC_1A),
+            ec2.Subnet.fromSubnetId(this, 'PublicSubnet1b', SUBNET_PUBLIC_1B),
+        ];
+
+        this.privateAppSubnets = [
+            ec2.Subnet.fromSubnetId(this, 'AppSubnet1a', SUBNET_APP_1A),
+            ec2.Subnet.fromSubnetId(this, 'AppSubnet1b', SUBNET_APP_1B),
+        ];
+
+        // ── Import Existing RDS Security Group ────────────────────────────────────
+        // fromSecurityGroupId imports a reference to the pre-existing RDS SG.
+        // CDK does NOT create, modify, or delete this security group.
+        // The ECS SG egress rule below references this ID so the DB instance
+        // accepts connections from ECS tasks automatically (no new rules needed
+        // on the existing RDS SG itself for the egress side).
         //
-        // For a deterministic import we use Vpc.fromLookup which populates
-        // this.vpc.publicSubnets when subnetGroupNameTag is set correctly.
-        // If the existing subnets don't have the tag, import them explicitly by ID.
-        //
-        // Because subnet IDs are stable AWS resources, we import by CIDR pattern:
-        this.publicSubnets = this.selectSubnetsByCidr(
-            this.vpc,
-            ['172.19.142.128/28', '172.19.143.128/28'],
-            'Public',
+        // ⚠️  You MAY still need to add an inbound :5432 rule to the existing
+        //     RDS SG from the ECS SG ID, if that rule doesn't already exist.
+        //     Do this manually in the AWS Console or via the CLI:
+        //       aws ec2 authorize-security-group-ingress \
+        //         --group-id <RDS_SG_ID> \
+        //         --protocol tcp --port 5432 \
+        //         --source-group <ECS_SG_ID>
+        this.rdsSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
+            this,
+            'ExistingRdsSg',
+            RDS_SG_ID,
         );
 
-        this.privateAppSubnets = this.selectSubnetsByCidr(
-            this.vpc,
-            ['172.19.142.0/25', '172.19.143.0/25'],
-            'PrivateApp',
+        // ── ALB Security Group ────────────────────────────────────────────────────
+        // Internet-facing load balancer: accepts HTTP and HTTPS from the public internet.
+        // Outbound: scoped to ECS SG on port 5000 only (wired below after ECS SG exists).
+        // allowAllOutbound: false — Control Tower egress guardrail.
+        this.albSecurityGroup = new ec2.SecurityGroup(this, 'AlbSg', {
+            vpc: this.vpc,
+            description: 'GSS ALB — HTTP/HTTPS inbound from internet, egress to ECS :5000 only',
+            allowAllOutbound: false,
+        });
+
+        this.albSecurityGroup.addIngressRule(
+            ec2.Peer.anyIpv4(),
+            ec2.Port.tcp(80),
+            'HTTP inbound from internet',
+        );
+        this.albSecurityGroup.addIngressRule(
+            ec2.Peer.anyIpv4(),
+            ec2.Port.tcp(443),
+            'HTTPS inbound from internet',
+        );
+
+        // ── ECS Security Group ────────────────────────────────────────────────────
+        // Inbound:  container port 5000 from ALB SG only (no direct internet access).
+        // Outbound: SG-based rule to EXISTING RDS SG :5432 + HTTPS :443 for AWS services.
+        // allowAllOutbound: false — Control Tower egress guardrail.
+        this.ecsSecurityGroup = new ec2.SecurityGroup(this, 'EcsSg', {
+            vpc: this.vpc,
+            description: 'GSS ECS — inbound from ALB :5000, egress to existing RDS SG :5432 + AWS :443',
+            allowAllOutbound: false,
+        });
+
+        // Inbound: container port 5000 from ALB SG only
+        this.ecsSecurityGroup.addIngressRule(
+            ec2.Peer.securityGroupId(this.albSecurityGroup.securityGroupId),
+            ec2.Port.tcp(5000),
+            'Inbound from ALB SG on container port 5000',
+        );
+
+        // Egress: ECS → existing RDS SG :5432
+        // References the imported RDS SG ID directly — precise, SG-based, not CIDR.
+        this.ecsSecurityGroup.addEgressRule(
+            ec2.Peer.securityGroupId(this.rdsSecurityGroup.securityGroupId),
+            ec2.Port.tcp(5432),
+            'ECS → existing RDS SG :5432',
+        );
+
+        // Egress: ECS → AWS managed services :443
+        // Required for ECR image pull, CloudWatch Logs, Secrets Manager.
+        // Remove if VPC Interface Endpoints for ECR + Logs exist in this account.
+        this.ecsSecurityGroup.addEgressRule(
+            ec2.Peer.anyIpv4(),
+            ec2.Port.tcp(443),
+            'ECS → AWS services (ECR + CloudWatch) :443',
+        );
+
+        // ── ALB → ECS egress (wired after ECS SG is defined) ─────────────────────
+        this.albSecurityGroup.addEgressRule(
+            ec2.Peer.securityGroupId(this.ecsSecurityGroup.securityGroupId),
+            ec2.Port.tcp(5000),
+            'ALB → ECS container port 5000',
         );
 
         // ── Outputs ───────────────────────────────────────────────────────────────
         new cdk.CfnOutput(this, 'VpcId', {
-            value: this.vpc.vpcId,
-            description: 'Imported VPC ID',
+            value: VPC_ID,
+            description: 'Imported enterprise VPC',
             exportName: 'GssRuntimeVpcId',
         });
-    }
-
-    /**
-     * Selects subnets from an imported VPC by matching CIDR blocks.
-     * During `cdk synth --context`, the VPC lookup populates subnet metadata.
-     * If the VPC import returned no subnets (dummy lookup), this falls back to
-     * an empty array — the real subnet selection will succeed after the first
-     * `cdk synth` with live AWS credentials.
-     */
-    private selectSubnetsByCidr(
-        vpc: ec2.IVpc,
-        cidrs: string[],
-        logicalPrefix: string,
-    ): ec2.ISubnet[] {
-        // When the VPC is a real looked-up VPC (not DummyVpc), it exposes all
-        // subnets.  We filter by the ipv4CidrBlock property.
-        const allSubnets = [
-            ...vpc.publicSubnets,
-            ...vpc.privateSubnets,
-            ...vpc.isolatedSubnets,
-        ];
-
-        const matched = allSubnets.filter(subnet =>
-            cidrs.includes((subnet as ec2.Subnet).ipv4CidrBlock ?? ''),
-        );
-
-        // If live lookup found them — return directly.
-        if (matched.length === cidrs.length) {
-            return matched;
-        }
-
-        // Fallback: CDK context not yet populated (first synth with dummy values).
-        // Return all available subnets so the stack structure is valid.
-        // Real values will be resolved on next synth with live credentials.
-        console.warn(
-            `[${logicalPrefix}] Could not match subnets by CIDR — ` +
-            `using ALL subnets from VPC lookup. Run 'cdk synth' with live AWS credentials.`,
-        );
-        return allSubnets.length > 0 ? allSubnets : [];
+        new cdk.CfnOutput(this, 'AlbSgId', {
+            value: this.albSecurityGroup.securityGroupId,
+            description: 'ALB Security Group ID',
+            exportName: 'GssAlbSgId',
+        });
+        new cdk.CfnOutput(this, 'EcsSgId', {
+            value: this.ecsSecurityGroup.securityGroupId,
+            description: 'ECS Security Group ID',
+            exportName: 'GssEcsSgId',
+        });
+        new cdk.CfnOutput(this, 'RdsSgId', {
+            value: this.rdsSecurityGroup.securityGroupId,
+            description: 'Imported RDS Security Group ID',
+            exportName: 'GssRdsSgId',
+        });
     }
 }
