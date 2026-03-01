@@ -33,15 +33,35 @@ phases:
     runtime-versions:
       nodejs: 20
     commands:
+
+      # ── [INSTALL/1] Starting directory ──────────────────────────────────────
+      - echo "===== WORKING DIRECTORY ====="
+      - pwd
+      - echo "===== CURRENT FILES ====="
+      - ls -la
+
       # Install CDK CLI globally
       - npm install -g aws-cdk@2
+
+      # ── [INSTALL/2] After cd gss-runtime-infra ──────────────────────────────
+      - cd gss-runtime-infra
+      - echo "===== WORKING DIRECTORY ====="
+      - pwd
+      - echo "===== CURRENT FILES ====="
+      - ls -la
 
       # Install ALL dependencies (including devDependencies: typescript, ts-node, @types/node)
       # --include=dev ensures tsc is available even if npm prunes devDeps by default in CI.
       # Compile TypeScript → dist/ so CDK runs node dist/bin/deploy.js (no ts-node needed).
-      - cd gss-runtime-infra
       - npm install --include=dev
+
+      # ── [INSTALL/3] After npm run build ─────────────────────────────────────
       - npm run build
+      - echo "===== WORKING DIRECTORY ====="
+      - pwd
+      - echo "===== CURRENT FILES ====="
+      - ls -la
+
       - cd ..
 
   pre_build:
@@ -55,7 +75,29 @@ phases:
 
   post_build:
     commands:
+
+      # ── [POST_BUILD/4] Start of post_build ──────────────────────────────────
+      - echo "===== WORKING DIRECTORY ====="
+      - pwd
+      - echo "===== CURRENT FILES ====="
+      - ls -la
+
+      # ── DEBUG: Full filesystem snapshot ────────────────────────────────────
+      - echo "================ DEBUG: WHERE AM I ================="
+      - pwd
+      - echo "================ DEBUG: ROOT CONTENT ================="
+      - ls -la
+      - echo "================ DEBUG: DIST EXISTS? ================="
+      - ls -la dist || echo "NO DIST FOLDER"
+      - echo "================ DEBUG: FULL TREE ================="
+      - ls -R .
+
+      # ── [POST_BUILD/5] After cd gss-runtime-infra ───────────────────────────
       - cd gss-runtime-infra
+      - echo "===== WORKING DIRECTORY ====="
+      - pwd
+      - echo "===== CURRENT FILES ====="
+      - ls -la
 
       # ── Step 1: CodeBuild native identity ──────────────────────────────────
       # Should be: arn:aws:iam::793912575116:role/gss-admin-codebuild-role
@@ -80,7 +122,7 @@ phases:
       - echo "========== [4/6] ASSUME DEPLOY ROLE (explicit test) =========="
       - aws sts assume-role --role-arn $CDK_DEPLOY_ROLE_ARN --role-session-name diagnostic-session --duration-seconds 900 || echo "FAILED TO ASSUME ROLE — check trust policy on Infra_setup"
 
-      # ── Step 5: CDK synth (runs dist/bin/deploy.js — no ts-node) ───────────
+      # ── Step 5: CDK synth (runs gss-runtime-infra/dist/bin/deploy.js) ───────
       - echo "========== [5/6] CDK SYNTH (verbose) =========="
       - CDK_DEFAULT_ACCOUNT=$RUNTIME_ACCOUNT_ID CDK_DEFAULT_REGION=$AWS_DEFAULT_REGION npx cdk synth --no-lookups -v
 
