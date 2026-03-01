@@ -1,10 +1,31 @@
 version: 0.2
 
+# ────────────────────────────────────────────────────────────────────────────
+# ACCOUNT TOPOLOGY (three distinct accounts — read carefully!)
+#
+#   CI/CD account (CodeBuild runs here) : 793912575116
+#   ECR + deploy-role account           : 771355239036  ← hosts Infra_setup + ECR repo
+#   Runtime account (ECS/Fargate)       : 771355239306  ← NOTE: one digit different!
+#
+# ROLE ASSUMPTION CHAIN:
+#   gss-admin-codebuild-role (793912575116)
+#     → sts:AssumeRole → Infra_setup (771355239036)   [--role-arn below]
+#       → cdk-hnb659fds-deploy-role (771355239306)
+#         → cdk-hnb659fds-cfn-exec-role (771355239306)
+#           → CloudFormation executes stacks in runtime account
+#
+# PREREQUISITES (one-time, done outside this buildspec):
+#   1. Infra_setup trust policy must trust: arn:aws:iam::793912575116:role/gss-admin-codebuild-role
+#   2. CDK bootstrap in runtime account:    cdk bootstrap aws://771355239306/ap-south-1 --trust 793912575116
+#   3. cdk-hnb659fds-deploy-role trust policy must also allow: arn:aws:iam::771355239036:role/Infra_setup
+# ────────────────────────────────────────────────────────────────────────────
 env:
   variables:
     ECR_URI: "771355239036.dkr.ecr.ap-south-1.amazonaws.com/gss-backend"
     AWS_DEFAULT_REGION: "ap-south-1"
+    # Infra_setup lives in 771355239036 (ECR/deploy-role account, NOT the runtime account)
     CDK_DEPLOY_ROLE_ARN: "arn:aws:iam::771355239036:role/Infra_setup"
+    # Runtime account where ECS/Fargate stacks are deployed (771355239306 ≠ ECR account 771355239036)
     RUNTIME_ACCOUNT_ID: "771355239306"
 
 phases:

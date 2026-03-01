@@ -66,6 +66,22 @@ export class PipelineStack extends cdk.Stack {
         });
 
         // ── CodeBuild IAM Role ─────────────────────────────────────────────────────
+        //
+        // Cross-account deploy chain:
+        //   gss-admin-codebuild-role (793912575116)
+        //     → sts:AssumeRole → Infra_setup (771355239036)   ← --role-arn
+        //       → cdk-hnb659fds-deploy-role (771355239306)    ← CDK bootstrap role
+        //         → cdk-hnb659fds-cfn-exec-role (771355239306) ← CF execution
+        //
+        // Prerequisites for this chain to work:
+        //   1. Infra_setup trust policy must allow principal:
+        //        arn:aws:iam::793912575116:role/gss-admin-codebuild-role
+        //   2. cdk-hnb659fds-deploy-role trust policy must allow principal:
+        //        arn:aws:iam::771355239036:role/Infra_setup
+        //      (run: cdk bootstrap aws://771355239306/ap-south-1 --trust 793912575116
+        //       then manually add Infra_setup to the deploy-role trust policy)
+        //   3. CDK bootstrap must be applied in runtime account 771355239306.
+        // ─────────────────────────────────────────────────────────────────────────────
         const buildRole = new iam.Role(this, 'CodeBuildRole', {
             roleName: 'gss-admin-codebuild-role',
             assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
@@ -102,6 +118,26 @@ export class PipelineStack extends cdk.Stack {
                 'logs:PutLogEvents',
             ],
             resources: [buildLogGroup.logGroupArn],
+        }));
+
+        // ── FIX: Allow CodeBuild to assume the cross-account CDK deploy role ──────
+        // Without this the post_build `cdk deploy --role-arn` call fails with
+        // AccessDenied before CloudFormation is even contacted.
+        //
+        // ALSO required: add this role ARN as a trusted principal in the
+        // Infra_setup role trust policy (managed externally by enterprise team):
+        //   Principal: { AWS: "arn:aws:iam::793912575116:role/gss-admin-codebuild-role" }
+        buildRole.addToPolicy(new iam.PolicyStatement({
+            sid: 'AllowAssumeCrossAccountDeployRole',
+            actions: ['sts:AssumeRole'],
+            resources: [
+                // CDK deploy role (Infra_setup) in the ECR/deploy-role account
+                'arn:aws:iam::771355239036:role/Infra_setup',
+                // CDK bootstrap roles in the runtime account (assumed transitively)
+                'arn:aws:iam::771355239306:role/cdk-hnb659fds-deploy-role-771355239306-ap-south-1',
+                'arn:aws:iam::771355239306:role/cdk-hnb659fds-file-publish-role-771355239306-ap-south-1',
+                'arn:aws:iam::771355239306:role/cdk-hnb659fds-image-publish-role-771355239306-ap-south-1',
+            ],
         }));
 
         // ── CodeBuild Project ──────────────────────────────────────────────────────
