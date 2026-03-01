@@ -7,55 +7,34 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ServiceStack — Bootstrap-Free, Control Tower Compliant
+// ServiceStack — CDK-Managed IAM Roles, Bootstrap-Free, Control Tower Compliant
 //
-// ZERO IAM RESOURCES:
-//   This stack creates NO AWS::IAM::Role, AWS::IAM::Policy, or
-//   AWS::IAM::ManagedPolicy resources. All roles are pre-provisioned by the
-//   platform team and imported by ARN via fromRoleArn (mutable: false).
-//   Policy mutations from CDK are fully disabled.
+// IAM Strategy:
+//   CDK creates the Task Execution Role and Task Role directly in this stack.
+//   No external role ARNs are imported. No iam.Role.fromRoleArn() anywhere.
+//   CDK auto-generates role names → no CT naming guardrail conflicts.
 //
-// Pre-provisioned roles required (platform team creates these once):
+// Task Execution Role (ECS control-plane identity):
+//   - AmazonECSTaskExecutionRolePolicy (AWS managed — ECR auth + CW Logs)
+//   - ecr:GetDownloadUrlForLayer / BatchGetImage / BatchCheckLayerAvailability
+//       scoped to the specific cross-account ECR repo ARN
+//   - ecr:GetAuthorizationToken on * (AWS-mandated — cannot be further scoped)
+//   - logs:CreateLogStream / PutLogEvents scoped to this stack's log group
 //
-//   taskExecutionRoleArn  (passed via ServiceStackProps)
-//     Trust:    ecs-tasks.amazonaws.com
-//     Policies: AmazonECSTaskExecutionRolePolicy (AWS managed)
-//               ecr:GetAuthorizationToken (*)
-//               ecr:GetDownloadUrlForLayer, BatchGetImage, BatchCheckLayerAvailability
-//                 (on ECR repo arn:aws:ecr:ap-south-1:771355239036:repository/gss-backend)
-//               logs:CreateLogStream, logs:PutLogEvents
-//                 (on /ecs/gss/admin-service log group)
-//
-//   taskRoleArn  (passed via ServiceStackProps)
-//     Trust:    ecs-tasks.amazonaws.com
-//     Policies: (none required at launch; add SSM/S3/SQS as app grows)
+// Task Role (container runtime identity):
+//   - Zero permissions by default (least-privilege baseline)
+//   - Add SSM / S3 / SQS inline policies here as the application grows
 //
 // Bootstrap-free design:
-//   • NO DockerImageAsset / Asset bundling
-//   • NO ECR L2 repository object
-//   • Image referenced as a plain registry string — CDK generates no assets
-//   • cdk synth produces a self-contained CloudFormation template
-//   • No CDK toolkit bucket required
-//   • No bootstrap stack required
+//   • ContainerImage.fromRegistry(uri) — plain string in CloudFormation
+//   • No DockerImageAsset, no CDK toolkit bucket, no bootstrap stack
+//   • cdk synth produces a fully self-contained CloudFormation template
 //
-// Creates:
-//   • CloudWatch Log Group
-//   • Fargate Task Definition (auto-named family)
-//   • Fargate Service in private subnets, NO public IP
-//
-// Does NOT create:
-//   ✗ AWS::IAM::Role
-//   ✗ AWS::IAM::Policy
-//   ✗ AWS::IAM::ManagedPolicy
-//
-// Image pulled from (pre-built by CodeBuild before cdk deploy):
-//   771355239036.dkr.ecr.ap-south-1.amazonaws.com/gss-backend:latest
-//
-// Control Tower rules satisfied:
-//   • assignPublicIp: DISABLED
-//   • Zero IAM resources — CT IAM guardrails cannot block the stack
-//   • No S3 buckets — no ACL risk
-//   • No asset uploads — no bootstrap bucket needed
+// Control Tower compliance:
+//   • assignPublicIp: false — mandatory
+//   • No explicit role/resource names — CDK auto-generates (CT guardrail safe)
+//   • No S3 buckets, no ACLs
+//   • Security group egress scoped in NetworkImportStack
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -63,13 +42,17 @@ const DB_HOST = 'gss-configurator.c9u4e20w07bp.ap-south-1.rds.amazonaws.com';
 const DB_PORT = '5432';
 const DB_NAME = 'postgres';
 const DB_USER = 'postgres';
-const DB_PASSWORD = 'SecureKey_7788';   // ← migrate to Secrets Manager before production
-const JWT_SECRET = 'temp-dev-secret';
+const DB_PASSWORD = 'SecureKey_7788';   // ← TODO: migrate to Secrets Manager
+const JWT_SECRET = 'temp-dev-secret'; // ← TODO: rotate before production
 
-// Full ECR image URI — plain string, no CDK asset or API call.
-// The pipeline (CodeBuild) builds + pushes :latest before cdk deploy runs.
-// CDK writes this string directly into the CloudFormation task definition.
+// Full ECR image URI — plain string, zero CDK asset, zero bootstrap access.
+// CodeBuild pushes :latest before CDK deploy runs. CDK writes this string
+// directly into the CloudFormation task definition JSON.
 const ECR_IMAGE_URI = '771355239036.dkr.ecr.ap-south-1.amazonaws.com/gss-backend:latest';
+
+// ECR repo ARN — used only to scope the IAM pull policy (no ECR L2 object).
+// No account ID hardcoded in CDK logic — only in this ARN string for IAM scoping.
+const ECR_REPO_ARN = 'arn:aws:ecr:ap-south-1:771355239036:repository/gss-backend';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -78,29 +61,10 @@ export interface ServiceStackProps extends cdk.StackProps {
     readonly vpc: ec2.IVpc;
     /** Private app subnets — ECS tasks ONLY (172.19.142.0/25 & 172.19.143.0/25) */
     readonly privateAppSubnets: ec2.ISubnet[];
-    /** ECS security group (allowAllOutbound:false, scoped egress to RDS + :443) */
+    /** ECS security group (allowAllOutbound:false, scoped egress in NetworkImportStack) */
     readonly ecsSecurityGroup: ec2.SecurityGroup;
     readonly cluster: ecs.Cluster;
     readonly targetGroup: elbv2.ApplicationTargetGroup;
-
-    /**
-     * ARN of the pre-existing ECS Task Execution Role.
-     * Must be pre-provisioned by the platform team with:
-     *   - AmazonECSTaskExecutionRolePolicy (AWS managed)
-     *   - ECR pull from 771355239036 (cross-account)
-     *   - CloudWatch Logs write on /ecs/gss/admin-service
-     *
-     * Example: arn:aws:iam::771355239306:role/gss-admin-task-execution-role
-     */
-    readonly taskExecutionRoleArn: string;
-
-    /**
-     * ARN of the pre-existing ECS Task Role.
-     * Trust principal: ecs-tasks.amazonaws.com
-     *
-     * Example: arn:aws:iam::771355239306:role/gss-admin-task-role
-     */
-    readonly taskRoleArn: string;
 }
 
 export class ServiceStack extends cdk.Stack {
@@ -118,34 +82,83 @@ export class ServiceStack extends cdk.Stack {
             removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
-        // ── Import pre-existing IAM Roles (NO IAM resources created) ──────────────
+        // ── Task Execution Role ────────────────────────────────────────────────────
+        // Used by the ECS CONTROL PLANE (not the container) to:
+        //   • Pull the container image from ECR
+        //   • Write container stdout/stderr to CloudWatch Logs
         //
-        // mutable: false — CDK will NOT attach any policies to these roles.
-        // All permissions are pre-configured on the roles by the platform team.
-        // This produces zero AWS::IAM::* resources in the CloudFormation template.
-        const executionRole = iam.Role.fromRoleArn(
-            this,
-            'TaskExecutionRole',
-            props.taskExecutionRoleArn,
-            { mutable: false },
-        );
+        // roleName omitted — CDK auto-generates a unique name.
+        // Explicit names in Control Tower accounts trigger naming guardrail SCPs.
+        const executionRole = new iam.Role(this, 'TaskExecutionRole', {
+            assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+            description: 'ECS Fargate task execution role — ECR pull + CloudWatch Logs',
+            managedPolicies: [
+                // AWS managed: covers basic ECR auth token + CloudWatch Logs write
+                iam.ManagedPolicy.fromAwsManagedPolicyName(
+                    'service-role/AmazonECSTaskExecutionRolePolicy',
+                ),
+            ],
+        });
 
-        const taskRole = iam.Role.fromRoleArn(
-            this,
-            'TaskRole',
-            props.taskRoleArn,
-            { mutable: false },
-        );
+        // Scoped ECR pull: only the specific cross-account repo (less permissive than *)
+        // ECR account 771355239036 ≠ runtime account 771355239306 — cross-account pull.
+        // The ECR repo itself also needs a resource-based policy allowing this role's account.
+        executionRole.addToPolicy(new iam.PolicyStatement({
+            sid: 'CrossAccountECRPull',
+            effect: iam.Effect.ALLOW,
+            actions: [
+                'ecr:GetDownloadUrlForLayer',
+                'ecr:BatchGetImage',
+                'ecr:BatchCheckLayerAvailability',
+            ],
+            resources: [ECR_REPO_ARN],   // scoped to exact repo — not wildcard
+        }));
+
+        // ecr:GetAuthorizationToken is account-level — AWS does not allow scoping to a repo ARN.
+        // This is a documented AWS limitation, not a misconfiguration.
+        executionRole.addToPolicy(new iam.PolicyStatement({
+            sid: 'ECRAuthToken',
+            effect: iam.Effect.ALLOW,
+            actions: ['ecr:GetAuthorizationToken'],
+            resources: ['*'],   // unavoidable — AWS constraint
+        }));
+
+        // Scoped CloudWatch Logs write — only this service's log group (not *)
+        executionRole.addToPolicy(new iam.PolicyStatement({
+            sid: 'CloudWatchLogsWrite',
+            effect: iam.Effect.ALLOW,
+            actions: [
+                'logs:CreateLogStream',
+                'logs:PutLogEvents',
+            ],
+            resources: [logGroup.logGroupArn],   // scoped to this log group only
+        }));
+
+        // ── Task Role ─────────────────────────────────────────────────────────────
+        // Used by the RUNNING CONTAINER for any AWS SDK calls the application makes.
+        // Starts with ZERO permissions — least-privilege baseline.
+        //
+        // To add permissions as the application grows, use:
+        //   taskRole.addToPolicy(new iam.PolicyStatement({ ... }));
+        //
+        // Examples when needed:
+        //   S3 read:   s3:GetObject on arn:aws:s3:::my-bucket/*
+        //   SQS send:  sqs:SendMessage on specific queue ARN
+        //   SSM read:  ssm:GetParameter on specific parameter path
+        const taskRole = new iam.Role(this, 'TaskRole', {
+            assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+            description: 'ECS Fargate task role — runtime container AWS SDK identity',
+            // Zero managed policies — add inline policies below as features require them
+        });
 
         // ── Fargate Task Definition ────────────────────────────────────────────────
         // family omitted — CDK auto-generates (CT naming guardrail safe).
-        // No Docker image is built here. CDK only writes the ECR URI string into
-        // the CloudFormation template — zero asset, zero bootstrap bucket access.
+        // Image is referenced as a plain string — no CDK asset pipeline triggered.
         const taskDef = new ecs.FargateTaskDefinition(this, 'AdminTaskDef', {
-            cpu: 512,    // 0.5 vCPU
-            memoryLimitMiB: 1024,   // 1 GiB
-            executionRole,
-            taskRole,
+            cpu: 512,    // 0.5 vCPU — scale to 1024 under load
+            memoryLimitMiB: 1024,   // 1 GiB   — scale to 2048 under load
+            executionRole,          // CDK-created role — no ARN import
+            taskRole,               // CDK-created role — no ARN import
             runtimePlatform: {
                 operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
                 cpuArchitecture: ecs.CpuArchitecture.X86_64,
@@ -153,9 +166,8 @@ export class ServiceStack extends cdk.Stack {
         });
 
         // ── Container Definition ───────────────────────────────────────────────────
-        // ContainerImage.fromRegistry() accepts any fully-qualified image URI.
-        // This is a plain string substitution in CloudFormation — NO asset pipeline,
-        // NO CDK toolkit bucket, NO bootstrap required.
+        // ContainerImage.fromRegistry(string) → pure CloudFormation string substitution.
+        // No Docker build, no asset upload, no CDK toolkit bucket interaction.
         const container = taskDef.addContainer('AdminServiceContainer', {
             containerName: 'admin-service',
 
@@ -177,8 +189,8 @@ export class ServiceStack extends cdk.Stack {
                 logGroup,
             }),
 
-            // Container health check — /swagger path matches ALB target group.
-            // startPeriod: 90s covers .NET startup + DI initialization time.
+            // Health check: /swagger matches ALB target group path.
+            // startPeriod: 90s covers .NET cold start + DI wiring time.
             healthCheck: {
                 command: ['CMD-SHELL', 'curl -sf http://localhost:5000/swagger || exit 1'],
                 interval: cdk.Duration.seconds(30),
@@ -194,12 +206,12 @@ export class ServiceStack extends cdk.Stack {
         });
 
         // ── Fargate Service ────────────────────────────────────────────────────────
-        // CT requirements:
-        //   • vpcSubnets: ONLY private app subnets
-        //   • assignPublicIp: false — MANDATORY
-        //   • securityGroups: ECS SG (allowAllOutbound:false — defined in NetworkStack)
+        // Control Tower requirements:
+        //   • vpcSubnets: ONLY private app subnets (no public placement)
+        //   • assignPublicIp: false — MANDATORY in CT account
+        //   • securityGroups: ECS SG (allowAllOutbound:false, defined in NetworkImportStack)
+        // serviceName omitted — CDK auto-generates (CT naming guardrail safe).
         this.fargateService = new ecs.FargateService(this, 'AdminFargateService', {
-            // serviceName omitted — CDK auto-generates (CT naming guardrail safe).
             cluster: props.cluster,
             taskDefinition: taskDef,
             desiredCount: 1,
@@ -210,7 +222,7 @@ export class ServiceStack extends cdk.Stack {
                 subnets: props.privateAppSubnets,
             },
 
-            assignPublicIp: false,   // CT REQUIRED — no public IP on tasks
+            assignPublicIp: false,   // CT REQUIRED — tasks must never have public IPs
 
             circuitBreaker: { rollback: true },
 
@@ -236,9 +248,21 @@ export class ServiceStack extends cdk.Stack {
             exportName: 'GssTaskDefArn',
         });
 
+        new cdk.CfnOutput(this, 'TaskExecutionRoleArn', {
+            value: executionRole.roleArn,
+            description: 'CDK-created task execution role ARN',
+            exportName: 'GssTaskExecutionRoleArn',
+        });
+
+        new cdk.CfnOutput(this, 'TaskRoleArn', {
+            value: taskRole.roleArn,
+            description: 'CDK-created task role ARN',
+            exportName: 'GssTaskRoleArn',
+        });
+
         new cdk.CfnOutput(this, 'LogGroupName', {
             value: logGroup.logGroupName,
-            description: 'CloudWatch log group',
+            description: 'CloudWatch log group — tail: aws logs tail /ecs/gss/admin-service --follow',
             exportName: 'GssLogGroup',
         });
 
@@ -246,12 +270,6 @@ export class ServiceStack extends cdk.Stack {
             value: ECR_IMAGE_URI,
             description: 'ECR image URI deployed by this task definition',
             exportName: 'GssEcrImageUri',
-        });
-
-        new cdk.CfnOutput(this, 'TaskExecutionRoleArn', {
-            value: props.taskExecutionRoleArn,
-            description: 'Imported (pre-existing) task execution role ARN',
-            exportName: 'GssTaskExecutionRoleArn',
         });
     }
 }
