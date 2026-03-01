@@ -37,12 +37,14 @@ phases:
       - echo "===== [INSTALL/1] START - CURRENT FILES ====="
       - ls -la
       - npm install -g aws-cdk@2
-      - echo "===== [INSTALL/2] COMPILING CDK TYPESCRIPT ====="
-      - bash -c "cd gss-runtime-infra && npm install --include=dev && npm run build"
-      - echo "===== [INSTALL/3] VERIFYING COMPILED OUTPUT ====="
-      - ls -la gss-runtime-infra/dist/bin/deploy.js
-      - echo "===== [INSTALL/3] DIST TREE ====="
-      - ls -R gss-runtime-infra/dist
+      - echo "===== [INSTALL/2] INSTALLING DEPENDENCIES ====="
+      - bash -c "cd gss-runtime-infra && npm install --include=dev"
+      - echo "===== [INSTALL/3] RUNNING TSC WITH EMITTED FILE LIST ====="
+      - bash -c "cd gss-runtime-infra && npx tsc --listEmittedFiles 2>&1"
+      - echo "===== [INSTALL/4] ALL JS FILES OUTSIDE NODE_MODULES ====="
+      - find gss-runtime-infra -name "*.js" -not -path "*/node_modules/*" -type f
+      - echo "===== [INSTALL/5] DIST BIN FOLDER CHECK ====="
+      - ls -la gss-runtime-infra/dist/bin/ || echo "gss-runtime-infra/dist/bin/ NOT FOUND"
 
   pre_build:
     commands:
