@@ -19,6 +19,7 @@ version: 0.2
 #   2. CDK bootstrap in runtime account:    cdk bootstrap aws://771355239306/ap-south-1 --trust 793912575116
 #   3. cdk-hnb659fds-deploy-role trust policy must also allow: arn:aws:iam::771355239036:role/Infra_setup
 # ────────────────────────────────────────────────────────────────────────────
+
 env:
   variables:
     ECR_URI: "771355239036.dkr.ecr.ap-south-1.amazonaws.com/gss-backend"
@@ -49,4 +50,51 @@ phases:
   post_build:
     commands:
       - cd gss-runtime-infra
-      - CDK_DEFAULT_ACCOUNT=$RUNTIME_ACCOUNT_ID CDK_DEFAULT_REGION=$AWS_DEFAULT_REGION npx cdk deploy --all --role-arn $CDK_DEPLOY_ROLE_ARN --require-approval never
+
+      # ── Step 1: CodeBuild native identity ──────────────────────────────────
+      # This is the IAM principal that CodeBuild is running as BEFORE any AssumeRole.
+      # Should be: arn:aws:iam::793912575116:role/gss-admin-codebuild-role
+      - echo "========== [1/6] CODEBUILD NATIVE IDENTITY =========="
+      - aws sts get-caller-identity
+
+      # ── Step 2: Environment variables ──────────────────────────────────────
+      # Verify the three account values that CDK reads at synth + deploy time.
+      # CDK_DEFAULT_ACCOUNT must match RUNTIME_ACCOUNT_ID (771355239306).
+      - echo "========== [2/6] CDK ENVIRONMENT VARIABLES =========="
+      - echo "CDK_DEFAULT_ACCOUNT  = $RUNTIME_ACCOUNT_ID"
+      - echo "CDK_DEFAULT_REGION   = $AWS_DEFAULT_REGION"
+      - echo "CDK_DEPLOY_ROLE_ARN  = $CDK_DEPLOY_ROLE_ARN"
+      - echo "ECR_URI              = $ECR_URI"
+
+      # ── Step 3: Attempt explicit AssumeRole ────────────────────────────────
+      # This is the exact role CDK will try to assume for CloudFormation.
+      # If this step fails → trust policy on Infra_setup is wrong.
+      # Expected: 'arn:aws:iam::771355239036:role/Infra_setup' as UserId/Arn.
+      - echo "========== [3/6] ASSUME DEPLOY ROLE (explicit test) =========="
+      - aws sts assume-role --role-arn $CDK_DEPLOY_ROLE_ARN --role-session-name diagnostic-session --duration-seconds 900 || echo "FAILED TO ASSUME ROLE — check trust policy on Infra_setup"
+
+      # ── Step 4: CDK synth ──────────────────────────────────────────────────
+      # Runs entirely locally (zero AWS API calls).
+      # If this fails → TypeScript compile error or missing context.
+      - echo "========== [4/6] CDK SYNTH (verbose) =========="
+      - CDK_DEFAULT_ACCOUNT=$RUNTIME_ACCOUNT_ID CDK_DEFAULT_REGION=$AWS_DEFAULT_REGION npx cdk synth --no-lookups -v
+
+      # ── Step 5: CDK doctor ─────────────────────────────────────────────────
+      # Reports CDK CLI version, Node version, bootstrap status.
+      # If bootstrap is missing → this step flags it.
+      - echo "========== [5/6] CDK DOCTOR =========="
+      - npx cdk doctor || true
+
+      # ── Step 6: CDK deploy (full debug output) ─────────────────────────────
+      # --debug prints every HTTP request CDK makes to AWS.
+      # -v prints CloudFormation events as they arrive.
+      # Errors are NOT suppressed — let the build fail with the real cause.
+      #
+      # What each error means:
+      #   AccessDenied: sts:AssumeRole        → Infra_setup trust policy missing CodeBuild role
+      #   AccessDenied: iam:CreateRole         → SCP blocks IAM in runtime account
+      #   bootstrap bucket not found           → run: cdk bootstrap aws://771355239306/ap-south-1
+      #   No CDK bootstrap stack found         → same as above
+      #   Unable to resolve AWS account        → CDK_DEFAULT_ACCOUNT not set correctly
+      - echo "========== [6/6] CDK DEPLOY (debug + verbose) =========="
+      - CDK_DEFAULT_ACCOUNT=$RUNTIME_ACCOUNT_ID CDK_DEFAULT_REGION=$AWS_DEFAULT_REGION npx cdk deploy --all --role-arn $CDK_DEPLOY_ROLE_ARN --require-approval never -v --debug
