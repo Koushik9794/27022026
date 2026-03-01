@@ -11,7 +11,7 @@
         "strictNullChecks": true,
         "noImplicitThis": true,
         "alwaysStrict": true,
-        "outDir": "./dist",
+        "outDir": "dist",
         "rootDir": ".",
         "experimentalDecorators": true,
         "inlineSourceMap": true,
@@ -20,6 +20,10 @@
         "resolveJsonModule": true,
         "skipLibCheck": true
     },
+    "include": [
+        "bin/**/*.ts",
+        "lib/**/*.ts"
+    ],
     "exclude": [
         "node_modules",
         "dist"

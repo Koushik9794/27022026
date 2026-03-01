@@ -1,33 +1,31 @@
 version: 0.2
 
 # ────────────────────────────────────────────────────────────────────────────
-# ACCOUNT TOPOLOGY (three distinct accounts — read carefully!)
+# ACCOUNT TOPOLOGY (two accounts)
 #
-#   CI/CD account (CodeBuild runs here) : 793912575116
-#   ECR + deploy-role account           : 771355239036  ← hosts Infra_setup + ECR repo
-#   Runtime account (ECS/Fargate)       : 771355239306  ← NOTE: one digit different!
+#   CI/CD account (CodeBuild runs here)  : 793912575116
+#   Production account (ECR + ECS + CDK) : 771355239036  ← Infra_setup + ECR + Fargate
 #
 # ROLE ASSUMPTION CHAIN:
 #   gss-admin-codebuild-role (793912575116)
 #     → sts:AssumeRole → Infra_setup (771355239036)   [--role-arn below]
-#       → cdk-hnb659fds-deploy-role (771355239306)
-#         → cdk-hnb659fds-cfn-exec-role (771355239306)
-#           → CloudFormation executes stacks in runtime account
+#       → cdk-hnb659fds-deploy-role (771355239036)
+#         → cdk-hnb659fds-cfn-exec-role (771355239036)
+#           → CloudFormation executes stacks in production account
 #
 # PREREQUISITES (one-time, done outside this buildspec):
 #   1. Infra_setup trust policy must trust: arn:aws:iam::793912575116:role/gss-admin-codebuild-role
-#   2. CDK bootstrap in runtime account:    cdk bootstrap aws://771355239306/ap-south-1 --trust 793912575116
-#   3. cdk-hnb659fds-deploy-role trust policy must also allow: arn:aws:iam::771355239036:role/Infra_setup
+#   2. CDK bootstrap in production account: cdk bootstrap aws://771355239036/ap-south-1 --trust 793912575116
+#   3. cdk-hnb659fds-deploy-role must also trust: arn:aws:iam::771355239036:role/Infra_setup
 # ────────────────────────────────────────────────────────────────────────────
 
 env:
   variables:
     ECR_URI: "771355239036.dkr.ecr.ap-south-1.amazonaws.com/gss-backend"
     AWS_DEFAULT_REGION: "ap-south-1"
-    # Infra_setup lives in 771355239036 (ECR/deploy-role account, NOT the runtime account)
     CDK_DEPLOY_ROLE_ARN: "arn:aws:iam::771355239036:role/Infra_setup"
-    # Runtime account where ECS/Fargate stacks are deployed (771355239306 ≠ ECR account 771355239036)
-    RUNTIME_ACCOUNT_ID: "771355239306"
+    # Production account — same account that hosts ECR, Infra_setup, and ECS
+    RUNTIME_ACCOUNT_ID: "771355239036"
 
 phases:
 
@@ -38,11 +36,11 @@ phases:
       # Install CDK CLI globally
       - npm install -g aws-cdk@2
 
-      # Install CDK project dependencies and compile TypeScript → dist/
-      # Compiling here (not in post_build) means CDK runs compiled JS — no ts-node needed.
-      # This eliminates "Cannot find module" errors in CI environments.
+      # Install ALL dependencies (including devDependencies: typescript, ts-node, @types/node)
+      # --include=dev ensures tsc is available even if npm prunes devDeps by default in CI.
+      # Compile TypeScript → dist/ so CDK runs node dist/bin/deploy.js (no ts-node needed).
       - cd gss-runtime-infra
-      - npm install
+      - npm install --include=dev
       - npm run build
       - cd ..
 
@@ -91,8 +89,8 @@ phases:
       #
       # What each error means:
       #   AccessDenied: sts:AssumeRole   → Infra_setup trust policy missing CodeBuild role
-      #   AccessDenied: iam:CreateRole   → SCP blocks IAM in runtime account
-      #   bootstrap bucket not found     → run: cdk bootstrap aws://771355239306/ap-south-1
+      #   AccessDenied: iam:CreateRole   → SCP blocks IAM in production account
+      #   bootstrap bucket not found     → run: cdk bootstrap aws://771355239036/ap-south-1
       #   Unable to resolve AWS account  → CDK_DEFAULT_ACCOUNT not set correctly
       - echo "========== [6/6] CDK DEPLOY (debug + verbose) =========="
       - CDK_DEFAULT_ACCOUNT=$RUNTIME_ACCOUNT_ID CDK_DEFAULT_REGION=$AWS_DEFAULT_REGION npx cdk deploy --all --role-arn $CDK_DEPLOY_ROLE_ARN --require-approval never -v --debug
