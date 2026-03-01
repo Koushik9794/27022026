@@ -9,9 +9,30 @@ import { Construct } from 'constructs';
 // ─────────────────────────────────────────────────────────────────────────────
 // ServiceStack — Bootstrap-Free, Control Tower Compliant
 //
+// ZERO IAM RESOURCES:
+//   This stack creates NO AWS::IAM::Role, AWS::IAM::Policy, or
+//   AWS::IAM::ManagedPolicy resources. All roles are pre-provisioned by the
+//   platform team and imported by ARN via fromRoleArn (mutable: false).
+//   Policy mutations from CDK are fully disabled.
+//
+// Pre-provisioned roles required (platform team creates these once):
+//
+//   taskExecutionRoleArn  (passed via ServiceStackProps)
+//     Trust:    ecs-tasks.amazonaws.com
+//     Policies: AmazonECSTaskExecutionRolePolicy (AWS managed)
+//               ecr:GetAuthorizationToken (*)
+//               ecr:GetDownloadUrlForLayer, BatchGetImage, BatchCheckLayerAvailability
+//                 (on ECR repo arn:aws:ecr:ap-south-1:771355239036:repository/gss-backend)
+//               logs:CreateLogStream, logs:PutLogEvents
+//                 (on /ecs/gss/admin-service log group)
+//
+//   taskRoleArn  (passed via ServiceStackProps)
+//     Trust:    ecs-tasks.amazonaws.com
+//     Policies: (none required at launch; add SSM/S3/SQS as app grows)
+//
 // Bootstrap-free design:
 //   • NO DockerImageAsset / Asset bundling
-//   • NO ECR L2 repository object (no ecr.Repository.fromRepositoryAttributes)
+//   • NO ECR L2 repository object
 //   • Image referenced as a plain registry string — CDK generates no assets
 //   • cdk synth produces a self-contained CloudFormation template
 //   • No CDK toolkit bucket required
@@ -19,20 +40,22 @@ import { Construct } from 'constructs';
 //
 // Creates:
 //   • CloudWatch Log Group
-//   • Task Execution Role (least-privilege, auto-named)
-//   • Task Role            (auto-named)
 //   • Fargate Task Definition (auto-named family)
 //   • Fargate Service in private subnets, NO public IP
+//
+// Does NOT create:
+//   ✗ AWS::IAM::Role
+//   ✗ AWS::IAM::Policy
+//   ✗ AWS::IAM::ManagedPolicy
 //
 // Image pulled from (pre-built by CodeBuild before cdk deploy):
 //   771355239036.dkr.ecr.ap-south-1.amazonaws.com/gss-backend:latest
 //
 // Control Tower rules satisfied:
 //   • assignPublicIp: DISABLED
-//   • No admin roles — least-privilege only
+//   • Zero IAM resources — CT IAM guardrails cannot block the stack
 //   • No S3 buckets — no ACL risk
 //   • No asset uploads — no bootstrap bucket needed
-//   • Health check: /swagger (matches ALB target group)
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -48,9 +71,6 @@ const JWT_SECRET = 'temp-dev-secret';
 // CDK writes this string directly into the CloudFormation task definition.
 const ECR_IMAGE_URI = '771355239036.dkr.ecr.ap-south-1.amazonaws.com/gss-backend:latest';
 
-// ECR repo ARN — used only to scope the IAM pull permission (no ECR L2 object needed)
-const ECR_REPO_ARN = 'arn:aws:ecr:ap-south-1:771355239036:repository/gss-backend';
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ServiceStackProps extends cdk.StackProps {
@@ -62,6 +82,25 @@ export interface ServiceStackProps extends cdk.StackProps {
     readonly ecsSecurityGroup: ec2.SecurityGroup;
     readonly cluster: ecs.Cluster;
     readonly targetGroup: elbv2.ApplicationTargetGroup;
+
+    /**
+     * ARN of the pre-existing ECS Task Execution Role.
+     * Must be pre-provisioned by the platform team with:
+     *   - AmazonECSTaskExecutionRolePolicy (AWS managed)
+     *   - ECR pull from 771355239036 (cross-account)
+     *   - CloudWatch Logs write on /ecs/gss/admin-service
+     *
+     * Example: arn:aws:iam::771355239306:role/gss-admin-task-execution-role
+     */
+    readonly taskExecutionRoleArn: string;
+
+    /**
+     * ARN of the pre-existing ECS Task Role.
+     * Trust principal: ecs-tasks.amazonaws.com
+     *
+     * Example: arn:aws:iam::771355239306:role/gss-admin-task-role
+     */
+    readonly taskRoleArn: string;
 }
 
 export class ServiceStack extends cdk.Stack {
@@ -79,46 +118,24 @@ export class ServiceStack extends cdk.Stack {
             removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
-        // ── Task Execution Role ────────────────────────────────────────────────────
-        // Least-privilege: pull image from ECR + write logs to CloudWatch.
-        // roleName omitted — CDK auto-generates (CT naming guardrail safe).
-        const executionRole = new iam.Role(this, 'TaskExecutionRole', {
-            assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
-            managedPolicies: [
-                iam.ManagedPolicy.fromAwsManagedPolicyName(
-                    'service-role/AmazonECSTaskExecutionRolePolicy',
-                ),
-            ],
-        });
+        // ── Import pre-existing IAM Roles (NO IAM resources created) ──────────────
+        //
+        // mutable: false — CDK will NOT attach any policies to these roles.
+        // All permissions are pre-configured on the roles by the platform team.
+        // This produces zero AWS::IAM::* resources in the CloudFormation template.
+        const executionRole = iam.Role.fromRoleArn(
+            this,
+            'TaskExecutionRole',
+            props.taskExecutionRoleArn,
+            { mutable: false },
+        );
 
-        // Explicit cross-account ECR pull permission.
-        // ECR acct 771355239036 ≠ runtime acct 771355239306 — repo resource policy
-        // also needs to allow runtime account (set once in AWS Console on the ECR repo).
-        executionRole.addToPolicy(new iam.PolicyStatement({
-            sid: 'AllowCrossAccountECRPull',
-            effect: iam.Effect.ALLOW,
-            actions: [
-                'ecr:GetDownloadUrlForLayer',
-                'ecr:BatchGetImage',
-                'ecr:BatchCheckLayerAvailability',
-            ],
-            resources: [ECR_REPO_ARN],
-        }));
-
-        // GetAuthorizationToken is account-level (cannot be scoped to a repo ARN)
-        executionRole.addToPolicy(new iam.PolicyStatement({
-            sid: 'AllowECRAuthToken',
-            effect: iam.Effect.ALLOW,
-            actions: ['ecr:GetAuthorizationToken'],
-            resources: ['*'],
-        }));
-
-        // ── Task Role ─────────────────────────────────────────────────────────────
-        // Runtime container role — no extra permissions needed now.
-        // Add SSM / S3 / SQS inline policies here as the app requires them.
-        const taskRole = new iam.Role(this, 'TaskRole', {
-            assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
-        });
+        const taskRole = iam.Role.fromRoleArn(
+            this,
+            'TaskRole',
+            props.taskRoleArn,
+            { mutable: false },
+        );
 
         // ── Fargate Task Definition ────────────────────────────────────────────────
         // family omitted — CDK auto-generates (CT naming guardrail safe).
@@ -138,8 +155,7 @@ export class ServiceStack extends cdk.Stack {
         // ── Container Definition ───────────────────────────────────────────────────
         // ContainerImage.fromRegistry() accepts any fully-qualified image URI.
         // This is a plain string substitution in CloudFormation — NO asset pipeline,
-        // NO CDK toolkit bucket, NO bootstrap required. The pipeline pushes
-        // the image to ECR before invoking cdk deploy.
+        // NO CDK toolkit bucket, NO bootstrap required.
         const container = taskDef.addContainer('AdminServiceContainer', {
             containerName: 'admin-service',
 
@@ -230,6 +246,12 @@ export class ServiceStack extends cdk.Stack {
             value: ECR_IMAGE_URI,
             description: 'ECR image URI deployed by this task definition',
             exportName: 'GssEcrImageUri',
+        });
+
+        new cdk.CfnOutput(this, 'TaskExecutionRoleArn', {
+            value: props.taskExecutionRoleArn,
+            description: 'Imported (pre-existing) task execution role ARN',
+            exportName: 'GssTaskExecutionRoleArn',
         });
     }
 }

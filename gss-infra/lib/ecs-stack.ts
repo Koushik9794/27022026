@@ -10,23 +10,42 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EcsStack
+// EcsStack — Control Tower Compliant (Zero IAM resource creation)
+//
+// IAM POLICY:
+//   This stack creates ZERO AWS::IAM::* CloudFormation resources.
+//   All IAM roles are pre-provisioned by the platform/enterprise team and
+//   imported by ARN. CDK never mutates them.
+//
+// Role ARNs are passed via props (read from CDK context in gss-infra.ts).
+// Set them in cdk.json context or export as env vars before deploying.
+//
+// Pre-provisioned roles required (platform team must create these):
+//
+//   taskExecutionRoleArn
+//     Trust:    ecs-tasks.amazonaws.com
+//     Policies: AmazonECSTaskExecutionRolePolicy (AWS managed)
+//               ecr:GetAuthorizationToken (*)
+//               ecr:GetDownloadUrlForLayer, BatchGetImage, BatchCheckLayerAvailability (ECR repo)
+//               secretsmanager:GetSecretValue (DB secret ARN)
+//               logs:CreateLogStream, logs:PutLogEvents (log group ARN)
+//
+//   taskRoleArn
+//     Trust:    ecs-tasks.amazonaws.com
+//     Policies: (none required at launch — add SSM/S3/SQS as app grows)
 //
 // Creates:
 //   • ECR Repository         → stores Docker images pushed by CodeBuild
 //   • ECS Cluster            → logical grouping of Fargate services
-//   • Task Execution Role    → allows ECS to pull image + read secrets
-//   • Task Role              → permissions the running container has
 //   • Fargate Task Def       → container spec: image, CPU, memory, env vars
 //   • Fargate Service        → runs 1 desired task, connects to ALB target group
 //   • Application Load Balancer → internet-facing, forwards :80 to container :80
 //   • CloudWatch Log Group   → container stdout/stderr
 //
-// Container environment variables injected:
-//   • ConnectionStrings__DefaultConnection → built from RDS endpoint + secret
-//   • ASPNETCORE_ENVIRONMENT              → Production
-//   • ASPNETCORE_URLS                     → http://+:80
-//   • JWT_SECRET                          → dev placeholder (no auth in admin-service)
+// Does NOT create:
+//   ✗ AWS::IAM::Role
+//   ✗ AWS::IAM::Policy
+//   ✗ AWS::IAM::ManagedPolicy
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface EcsStackProps extends cdk.StackProps {
@@ -36,6 +55,26 @@ export interface EcsStackProps extends cdk.StackProps {
     albSecurityGroup: ec2.SecurityGroup;
     dbInstance: rds.DatabaseInstance;
     dbSecret: secretsmanager.ISecret;
+
+    /**
+     * ARN of the pre-existing ECS Task Execution Role.
+     * Must be pre-provisioned by the platform team with:
+     *   - AmazonECSTaskExecutionRolePolicy (AWS managed)
+     *   - ECR pull permissions
+     *   - Secrets Manager read on the DB secret
+     *
+     * Example: arn:aws:iam::<ACCOUNT_ID>:role/gss-admin-task-execution-role
+     */
+    readonly taskExecutionRoleArn: string;
+
+    /**
+     * ARN of the pre-existing ECS Task Role.
+     * Must be pre-provisioned by the platform team.
+     * Trust principal: ecs-tasks.amazonaws.com
+     *
+     * Example: arn:aws:iam::<ACCOUNT_ID>:role/gss-admin-task-role
+     */
+    readonly taskRoleArn: string;
 }
 
 export class EcsStack extends cdk.Stack {
@@ -83,30 +122,24 @@ export class EcsStack extends cdk.Stack {
             removalPolicy: cdk.RemovalPolicy.DESTROY,
         });
 
-        // ── Task Execution Role ────────────────────────────────────────────────────
-        // ECS control plane uses this to:
-        //   • Pull container image from ECR
-        //   • Write logs to CloudWatch
-        //   • Read secrets from Secrets Manager
-        const executionRole = new iam.Role(this, 'TaskExecutionRole', {
-            roleName: 'gss-admin-task-execution-role',
-            assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
-            managedPolicies: [
-                iam.ManagedPolicy.fromAwsManagedPolicyName(
-                    'service-role/AmazonECSTaskExecutionRolePolicy',
-                ),
-            ],
-        });
+        // ── Import pre-existing IAM Roles (NO IAM resources created) ──────────────
+        //
+        // mutable: false — CDK will NOT attempt to attach any policies to these
+        // roles. All permissions must be pre-configured on the roles by the
+        // platform team. This produces zero AWS::IAM::* resources in the template.
+        const executionRole = iam.Role.fromRoleArn(
+            this,
+            'TaskExecutionRole',
+            props.taskExecutionRoleArn,
+            { mutable: false },
+        );
 
-        // Allow the task to read the DB secret at startup
-        props.dbSecret.grantRead(executionRole);
-
-        // ── Task Role ─────────────────────────────────────────────────────────────
-        // The actual running container uses this role for AWS SDK calls
-        const taskRole = new iam.Role(this, 'TaskRole', {
-            roleName: 'gss-admin-task-role',
-            assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
-        });
+        const taskRole = iam.Role.fromRoleArn(
+            this,
+            'TaskRole',
+            props.taskRoleArn,
+            { mutable: false },
+        );
 
         // ── Fargate Task Definition ────────────────────────────────────────────────
         const taskDefinition = new ecs.FargateTaskDefinition(this, 'AdminTaskDef', {
@@ -123,12 +156,10 @@ export class EcsStack extends cdk.Stack {
         });
 
         // ── Container Definition ───────────────────────────────────────────────────
-        // Initially uses a placeholder nginx image.
-        // CodeBuild replaces this with the real image during first pipeline run.
+        // Initially uses the ECR image. CodeBuild replaces this during first run.
         const containerDef = taskDefinition.addContainer('AdminServiceContainer', {
             containerName: 'admin-service',
 
-            // Placeholder — will be overridden by CodeBuild imagedefinitions.json
             image: ecs.ContainerImage.fromEcrRepository(this.ecrRepository, 'latest'),
 
             // ── Environment Variables ──────────────────────────────────────────────
@@ -142,18 +173,14 @@ export class EcsStack extends cdk.Stack {
             },
 
             // ── Secrets (from Secrets Manager) ────────────────────────────────────
-            // ECS injects these as env vars at task startup — never stored in task def JSON
+            // ECS injects these as env vars at task startup — never stored in task def JSON.
+            // NOTE: The task execution role must have secretsmanager:GetSecretValue
+            // on this secret ARN (pre-configured by platform team, NOT added here).
             secrets: {
-                // The auto-generated RDS secret has this JSON structure:
-                // { "host": "...", "port": "5432", "username": "postgres", "password": "..." }
                 DB_HOST: ecs.Secret.fromSecretsManager(props.dbSecret, 'host'),
                 DB_PORT: ecs.Secret.fromSecretsManager(props.dbSecret, 'port'),
                 DB_USER: ecs.Secret.fromSecretsManager(props.dbSecret, 'username'),
                 DB_PASSWORD: ecs.Secret.fromSecretsManager(props.dbSecret, 'password'),
-
-                // Build the full ADO.NET/Npgsql connection string from secret fields
-                // This satisfies: builder.Configuration.GetConnectionString("DefaultConnection")
-                // Note: The connection string must be assembled via a custom approach below
             },
 
             // ── Logging ───────────────────────────────────────────────────────────
@@ -163,13 +190,12 @@ export class EcsStack extends cdk.Stack {
             }),
 
             // ── Health Check ──────────────────────────────────────────────────────
-            // ECS also runs this to determine container health before routing traffic
             healthCheck: {
                 command: ['CMD-SHELL', 'curl -f http://localhost:80/health || exit 1'],
                 interval: cdk.Duration.seconds(30),
                 timeout: cdk.Duration.seconds(10),
                 retries: 3,
-                startPeriod: cdk.Duration.seconds(60), // Give migrations time to run
+                startPeriod: cdk.Duration.seconds(60),
             },
         });
 
@@ -179,116 +205,14 @@ export class EcsStack extends cdk.Stack {
             protocol: ecs.Protocol.TCP,
         });
 
-        // ── Application Load Balancer ──────────────────────────────────────────────
-        const alb = new elbv2.ApplicationLoadBalancer(this, 'GssAlb', {
-            loadBalancerName: 'gss-admin-alb',
-            vpc: props.vpc,
-            internetFacing: true,
-            securityGroup: props.albSecurityGroup,
-            vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
-        });
-
-        // HTTP listener on port 80
-        const listener = alb.addListener('HttpListener', {
-            port: 80,
-            open: false,        // Security group controls access, not listener
-            defaultAction: elbv2.ListenerAction.fixedResponse(503, {
-                contentType: 'text/plain',
-                messageBody: 'Service starting...',
-            }),
-        });
-
-        // ── Target Group ──────────────────────────────────────────────────────────
-        const targetGroup = new elbv2.ApplicationTargetGroup(this, 'AdminTargetGroup', {
-            targetGroupName: 'gss-admin-tg',
-            vpc: props.vpc,
-            port: 80,
-            protocol: elbv2.ApplicationProtocol.HTTP,
-            targetType: elbv2.TargetType.IP,  // Required for Fargate
-
-            // Health check — maps to GET /health in admin-service Program.cs
-            healthCheck: {
-                path: '/health',
-                interval: cdk.Duration.seconds(30),
-                timeout: cdk.Duration.seconds(10),
-                healthyThresholdCount: 2,
-                unhealthyThresholdCount: 3,
-                healthyHttpCodes: '200',
-            },
-
-            // Deregistration delay — low for faster deployments
-            deregistrationDelay: cdk.Duration.seconds(30),
-        });
-
-        // Add target group to listener
-        listener.addTargetGroups('AdminTargetGroup', {
-            targetGroups: [targetGroup],
-        });
-
-        // ── Fargate Service ────────────────────────────────────────────────────────
-        this.fargateService = new ecs.FargateService(this, 'AdminFargateService', {
-            serviceName: 'gss-admin-service',
-            cluster: this.cluster,
-            taskDefinition,
-            desiredCount: 1,
-            securityGroups: [props.ecsSecurityGroup],
-            vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-
-            // Assign public IP = false — service is in private subnet, NAT is used for outbound
-            assignPublicIp: false,
-
-            // Circuit breaker — auto-rolls back if new task can't start
-            circuitBreaker: {
-                rollback: true,
-            },
-
-            // Health check grace period — must be >= migration time (~30-60 s)
-            healthCheckGracePeriod: cdk.Duration.seconds(120),
-
-            // Deployment
-            minHealthyPercent: 0,   // Allows stopping old task before new one starts (1 task scenario)
-            maxHealthyPercent: 200,
-
-            // Connect to ALB
-            loadBalancers: [],       // We'll attach via target group below
-        });
-
-        // Attach the Fargate service to the ALB target group
-        this.fargateService.attachToApplicationTargetGroup(targetGroup);
-
-        // Allow outbound from ECS security group to RDS
-        // (already defined in network-stack, but this ensures the db allows it)
-        this.fargateService.connections.allowTo(
-            props.dbInstance,
-            ec2.Port.tcp(5432),
-            'ECS → RDS PostgreSQL',
-        );
-
-        // ── Connection String Override Workaround ─────────────────────────────────
-        // The admin-service reads a single connection string, not separate env vars.
-        // We inject the connection string as a PLAIN env var built at synth time.
-        // IMPORTANT: This exposes the endpoint in the task definition JSON (not the password).
-        // For full security use Secrets Manager + custom entry-point script (see README).
-        //
-        // Here we use a CloudFormation dynamic reference pattern:
-        // The password comes from Secrets Manager at runtime via ecs.Secret above.
-        // The connection string is partially constructed here; password is in secrets.
-        //
-        // Since Npgsql also accepts individual env vars, we set them as secrets above
-        // AND inject the full connection string as a CFN dynamic reference:
-
+        // ── Connection String (Fn::Join — no IAM impact) ──────────────────────────
+        // Assembles the Npgsql connection string from RDS endpoint + Secrets Manager
+        // references at CloudFormation deployment time. No IAM resource is created.
         const dbHostname = props.dbInstance.instanceEndpoint.hostname;
         const dbPort = props.dbInstance.instanceEndpoint.port;
-
-        // We set the connection string via a container override using the secret reference.
-        // BuildConnectionString is assembled in a startup-time env using shell expansion.
-        // Add a second container definition override for the connection string:
-        const cfnTaskDef = taskDefinition.node.defaultChild as cdk.aws_ecs.CfnTaskDefinition;
-
-        // Override the connection string using a CloudFormation secret reference
-        // Format: {{resolve:secretsmanager:secretId:SecretString:field}}
         const secretId = props.dbSecret.secretArn;
 
+        const cfnTaskDef = taskDefinition.node.defaultChild as cdk.aws_ecs.CfnTaskDefinition;
         cfnTaskDef.addPropertyOverride(
             'ContainerDefinitions.0.Environment',
             [
@@ -317,6 +241,83 @@ export class EcsStack extends cdk.Stack {
             ],
         );
 
+        // ── Application Load Balancer ──────────────────────────────────────────────
+        const alb = new elbv2.ApplicationLoadBalancer(this, 'GssAlb', {
+            loadBalancerName: 'gss-admin-alb',
+            vpc: props.vpc,
+            internetFacing: true,
+            securityGroup: props.albSecurityGroup,
+            vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
+        });
+
+        // HTTP listener on port 80
+        const listener = alb.addListener('HttpListener', {
+            port: 80,
+            open: false,        // Security group controls access, not listener
+            defaultAction: elbv2.ListenerAction.fixedResponse(503, {
+                contentType: 'text/plain',
+                messageBody: 'Service starting...',
+            }),
+        });
+
+        // ── Target Group ──────────────────────────────────────────────────────────
+        const targetGroup = new elbv2.ApplicationTargetGroup(this, 'AdminTargetGroup', {
+            targetGroupName: 'gss-admin-tg',
+            vpc: props.vpc,
+            port: 80,
+            protocol: elbv2.ApplicationProtocol.HTTP,
+            targetType: elbv2.TargetType.IP,  // Required for Fargate
+
+            healthCheck: {
+                path: '/health',
+                interval: cdk.Duration.seconds(30),
+                timeout: cdk.Duration.seconds(10),
+                healthyThresholdCount: 2,
+                unhealthyThresholdCount: 3,
+                healthyHttpCodes: '200',
+            },
+
+            deregistrationDelay: cdk.Duration.seconds(30),
+        });
+
+        // Add target group to listener
+        listener.addTargetGroups('AdminTargetGroup', {
+            targetGroups: [targetGroup],
+        });
+
+        // ── Fargate Service ────────────────────────────────────────────────────────
+        this.fargateService = new ecs.FargateService(this, 'AdminFargateService', {
+            serviceName: 'gss-admin-service',
+            cluster: this.cluster,
+            taskDefinition,
+            desiredCount: 1,
+            securityGroups: [props.ecsSecurityGroup],
+            vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+
+            assignPublicIp: false,
+
+            circuitBreaker: {
+                rollback: true,
+            },
+
+            healthCheckGracePeriod: cdk.Duration.seconds(120),
+
+            minHealthyPercent: 0,
+            maxHealthyPercent: 200,
+
+            loadBalancers: [],
+        });
+
+        // Attach the Fargate service to the ALB target group
+        this.fargateService.attachToApplicationTargetGroup(targetGroup);
+
+        // Allow outbound from ECS security group to RDS (SG rule only — no IAM)
+        this.fargateService.connections.allowTo(
+            props.dbInstance,
+            ec2.Port.tcp(5432),
+            'ECS → RDS PostgreSQL',
+        );
+
         // ── Outputs ────────────────────────────────────────────────────────────────
         new cdk.CfnOutput(this, 'AlbDnsName', {
             value: alb.loadBalancerDnsName,
@@ -338,6 +339,12 @@ export class EcsStack extends cdk.Stack {
         new cdk.CfnOutput(this, 'EcsServiceName', {
             value: this.fargateService.serviceName,
             exportName: 'GssEcsService',
+        });
+
+        new cdk.CfnOutput(this, 'TaskExecutionRoleArn', {
+            value: props.taskExecutionRoleArn,
+            description: 'Imported (pre-existing) task execution role ARN',
+            exportName: 'GssTaskExecutionRole',
         });
     }
 }

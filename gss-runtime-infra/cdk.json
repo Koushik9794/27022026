@@ -30,6 +30,9 @@
         "@aws-cdk/aws-ec2:ebsDefaultGp3Volume": true,
         "cicdAccount": "793912575116",
         "runtimeAccount": "771355239306",
-        "region": "ap-south-1"
+        "region": "ap-south-1",
+        "_iam_note": "Role ARNs below must be pre-provisioned in runtime account 771355239306 by the platform team. Alternatively set env vars GSS_TASK_EXECUTION_ROLE_ARN and GSS_TASK_ROLE_ARN.",
+        "taskExecutionRoleArn": "<REPLACE: arn:aws:iam::771355239306:role/gss-admin-task-execution-role>",
+        "taskRoleArn": "<REPLACE: arn:aws:iam::771355239306:role/gss-admin-task-role>"
     }
 }
