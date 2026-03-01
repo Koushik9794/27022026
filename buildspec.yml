@@ -5,15 +5,20 @@ version: 0.2
 #   Production account (ECR + ECS + CDK) : 771355239036
 #
 # ROLE ASSUMPTION CHAIN:
-#   gss-admin-codebuild-role (793912575116)
+#   CrossAccountServiceExecutionRoleForCodeBuild (793912575116)
 #     -> sts:AssumeRole -> Infra_setup (771355239036)
 #       -> cdk-hnb659fds-deploy-role (771355239036)
 #         -> cdk-hnb659fds-cfn-exec-role (771355239036)
 #
 # PREREQUISITES:
-#   1. Infra_setup trust policy must trust: arn:aws:iam::793912575116:role/gss-admin-codebuild-role
+#   1. Infra_setup trust policy must trust the CodeBuild execution role in 793912575116
 #   2. CDK bootstrap: cdk bootstrap aws://771355239036/ap-south-1 --trust 793912575116
 #   3. cdk-hnb659fds-deploy-role must trust: arn:aws:iam::771355239036:role/Infra_setup
+#
+# CDK EXECUTION MODEL:
+#   cdk.json "app": "node gss-runtime-infra/dist/bin/deploy.js"
+#   CDK is invoked from REPO ROOT (not from inside gss-runtime-infra/)
+#   tsc compiles gss-runtime-infra/bin/*.ts -> gss-runtime-infra/dist/bin/*.js
 
 env:
   variables:
@@ -32,18 +37,12 @@ phases:
       - echo "===== [INSTALL/1] START - CURRENT FILES ====="
       - ls -la
       - npm install -g aws-cdk@2
-      - cd gss-runtime-infra
-      - echo "===== [INSTALL/2] AFTER cd gss-runtime-infra - WORKING DIRECTORY ====="
-      - pwd
-      - echo "===== [INSTALL/2] AFTER cd gss-runtime-infra - CURRENT FILES ====="
-      - ls -la
-      - npm install --include=dev
-      - npm run build
-      - echo "===== [INSTALL/3] AFTER npm run build - WORKING DIRECTORY ====="
-      - pwd
-      - echo "===== [INSTALL/3] AFTER npm run build - CURRENT FILES ====="
-      - ls -la
-      - cd ..
+      - echo "===== [INSTALL/2] COMPILING CDK TYPESCRIPT ====="
+      - bash -c "cd gss-runtime-infra && npm install --include=dev && npm run build"
+      - echo "===== [INSTALL/3] VERIFYING COMPILED OUTPUT ====="
+      - ls -la gss-runtime-infra/dist/bin/deploy.js
+      - echo "===== [INSTALL/3] DIST TREE ====="
+      - ls -R gss-runtime-infra/dist
 
   pre_build:
     commands:
@@ -60,13 +59,8 @@ phases:
       - pwd
       - echo "===== [POST_BUILD/4] START - CURRENT FILES ====="
       - ls -la
-      - if [ -d dist ]; then ls -la dist; else echo "NO DIST FOLDER"; fi
-      - ls -R .
-      - cd gss-runtime-infra
-      - echo "===== [POST_BUILD/5] AFTER cd gss-runtime-infra - WORKING DIRECTORY ====="
-      - pwd
-      - echo "===== [POST_BUILD/5] AFTER cd gss-runtime-infra - CURRENT FILES ====="
-      - ls -la
+      - echo "===== [POST_BUILD/4] CDK DIST CHECK (from repo root) ====="
+      - ls -la gss-runtime-infra/dist/bin/deploy.js
       - echo "========== [1/6] CODEBUILD NATIVE IDENTITY =========="
       - aws sts get-caller-identity
       - echo "========== [2/6] CDK ENVIRONMENT VARIABLES =========="
@@ -75,10 +69,10 @@ phases:
       - echo "CDK_DEPLOY_ROLE_ARN = $CDK_DEPLOY_ROLE_ARN"
       - echo "ECR_URI             = $ECR_URI"
       - echo "========== [3/6] COMPILED OUTPUT CHECK =========="
-      - ls -la dist/bin/deploy.js
+      - ls -la gss-runtime-infra/dist/bin/deploy.js
       - echo "========== [4/6] ASSUME DEPLOY ROLE =========="
       - if aws sts assume-role --role-arn $CDK_DEPLOY_ROLE_ARN --role-session-name diagnostic-session --duration-seconds 900; then echo "ASSUME ROLE SUCCESS"; else echo "FAILED TO ASSUME ROLE - check trust policy on Infra_setup"; fi
-      - echo "========== [5/6] CDK SYNTH =========="
-      - CDK_DEFAULT_ACCOUNT=$RUNTIME_ACCOUNT_ID CDK_DEFAULT_REGION=$AWS_DEFAULT_REGION npx cdk synth --no-lookups -v
-      - echo "========== [6/6] CDK DEPLOY =========="
-      - CDK_DEFAULT_ACCOUNT=$RUNTIME_ACCOUNT_ID CDK_DEFAULT_REGION=$AWS_DEFAULT_REGION npx cdk deploy --all --role-arn $CDK_DEPLOY_ROLE_ARN --require-approval never -v --debug
+      - echo "========== [5/6] CDK SYNTH (from repo root) =========="
+      - CDK_DEFAULT_ACCOUNT=$RUNTIME_ACCOUNT_ID CDK_DEFAULT_REGION=$AWS_DEFAULT_REGION npx cdk synth --app "node gss-runtime-infra/dist/bin/deploy.js" --no-lookups -v
+      - echo "========== [6/6] CDK DEPLOY (from repo root) =========="
+      - CDK_DEFAULT_ACCOUNT=$RUNTIME_ACCOUNT_ID CDK_DEFAULT_REGION=$AWS_DEFAULT_REGION npx cdk deploy --app "node gss-runtime-infra/dist/bin/deploy.js" --all --role-arn $CDK_DEPLOY_ROLE_ARN --require-approval never -v --debug
